@@ -42,7 +42,20 @@ open build/kurly.app
 
 ### Linux
 
-On Debian/Ubuntu: `sudo apt install cmake g++ qt6-base-dev qt6-tools-dev qt6-l10n-tools curl`
+On Debian/Ubuntu:
+
+```bash
+sudo apt install cmake g++ qt6-base-dev qt6-tools-dev qt6-l10n-tools curl
+```
+
+On Arch Linux (add `qt6-wayland` for native Wayland support):
+
+```bash
+sudo pacman -S --needed base-devel cmake qt6-base qt6-tools curl
+```
+
+If CMake can't find Qt right after installing it, open a new terminal and
+try again.
 
 ```bash
 cmake -S . -B build

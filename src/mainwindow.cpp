@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include "curlcommand.h"
+#include "spacing.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -42,7 +43,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_language->setCurrentIndex(idx < 0 ? 0 : idx);
     setLanguage(m_language->currentData().toString());
 
-    resize(1100, 760);
+    // Window sizes are expressed in grid units, per the HIG.
+    setMinimumSize(40 * Spacing::gridUnit, 30 * Spacing::gridUnit);
+    resize(62 * Spacing::gridUnit, 44 * Spacing::gridUnit);
 }
 
 MainWindow::~MainWindow()
@@ -60,9 +63,14 @@ void MainWindow::buildUi()
     // ---- Left: the form -------------------------------------------------
     auto *form = new QWidget;
     auto *formLayout = new QVBoxLayout(form);
+    formLayout->setContentsMargins(0, 0, 0, 0);
+    formLayout->setSpacing(Spacing::large); // between groups
 
     auto *top = new QFormLayout;
     top->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    top->setContentsMargins(0, 0, 0, 0);
+    top->setHorizontalSpacing(Spacing::small);
+    top->setVerticalSpacing(Spacing::small);
     m_urlLabel = new QLabel;
     m_url = new QLineEdit;
     m_methodLabel = new QLabel;
@@ -75,12 +83,15 @@ void MainWindow::buildUi()
     // Headers
     m_headersBox = new QGroupBox;
     auto *hl = new QVBoxLayout(m_headersBox);
+    hl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
+    hl->setSpacing(Spacing::small);
     m_headers = new QTableWidget(0, 2);
     m_headers->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_headers->verticalHeader()->hide();
     m_headers->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_headers->setMinimumHeight(110);
+    m_headers->setMinimumHeight(6 * Spacing::gridUnit);
     auto *hbtn = new QHBoxLayout;
+    hbtn->setSpacing(Spacing::medium);
     m_addHeader = new QPushButton;
     m_removeHeader = new QPushButton;
     hbtn->addWidget(m_addHeader);
@@ -93,9 +104,10 @@ void MainWindow::buildUi()
     // Body
     m_bodyBox = new QGroupBox;
     auto *bl = new QVBoxLayout(m_bodyBox);
+    bl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     m_body = new QPlainTextEdit;
     m_body->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    m_body->setMinimumHeight(80);
+    m_body->setMinimumHeight(4 * Spacing::gridUnit);
     bl->addWidget(m_body);
     formLayout->addWidget(m_bodyBox, 1);
 
@@ -103,6 +115,9 @@ void MainWindow::buildUi()
     m_authBox = new QGroupBox;
     auto *al = new QFormLayout(m_authBox);
     al->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    al->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
+    al->setHorizontalSpacing(Spacing::small);
+    al->setVerticalSpacing(Spacing::small);
     m_userLabel = new QLabel;
     m_user = new QLineEdit;
     m_agentLabel = new QLabel;
@@ -121,7 +136,11 @@ void MainWindow::buildUi()
     // Flags
     m_optionsBox = new QGroupBox;
     auto *ol = new QVBoxLayout(m_optionsBox);
+    ol->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     auto *grid = new QGridLayout;
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setHorizontalSpacing(Spacing::large); // columns are separate groups
+    grid->setVerticalSpacing(Spacing::small);
     m_follow = new QCheckBox;
     m_insecure = new QCheckBox;
     m_verbose = new QCheckBox;
@@ -140,8 +159,10 @@ void MainWindow::buildUi()
     auto *commandPane = new QWidget;
     auto *rl = new QVBoxLayout(commandPane);
     rl->setContentsMargins(0, 0, 0, 0);
+    rl->setSpacing(Spacing::small); // title → content, content → its controls
 
     auto *langRow = new QHBoxLayout;
+    langRow->setSpacing(Spacing::small);
     m_languageLabel = new QLabel;
     m_language = new QComboBox;
     // Language names are shown in their own language and are not translated.
@@ -160,6 +181,7 @@ void MainWindow::buildUi()
     rl->addWidget(m_result, 1);
 
     auto *toggles = new QHBoxLayout;
+    toggles->setSpacing(Spacing::large);
     m_longOpts = new QCheckBox;
     m_multiline = new QCheckBox;
     toggles->addWidget(m_longOpts);
@@ -168,6 +190,7 @@ void MainWindow::buildUi()
     rl->addLayout(toggles);
 
     auto *buttons = new QHBoxLayout;
+    buttons->setSpacing(Spacing::medium);
     m_copy = new QPushButton;
     m_run = new QPushButton;
     m_run->setDefault(true);
@@ -178,7 +201,9 @@ void MainWindow::buildUi()
     auto *responsePane = new QWidget;
     auto *pl = new QVBoxLayout(responsePane);
     pl->setContentsMargins(0, 0, 0, 0);
+    pl->setSpacing(Spacing::small);
     auto *statusRow = new QHBoxLayout;
+    statusRow->setSpacing(Spacing::large);
     m_responseLabel = new QLabel;
     m_status = new QLabel;
     m_status->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -197,6 +222,7 @@ void MainWindow::buildUi()
     right->setStretchFactor(0, 1);
     right->setStretchFactor(1, 2);
     right->setChildrenCollapsible(false);
+    right->setHandleWidth(Spacing::large); // gap between command and response
 
     auto *split = new QSplitter;
     split->addWidget(form);
@@ -204,7 +230,14 @@ void MainWindow::buildUi()
     split->setStretchFactor(0, 1);
     split->setStretchFactor(1, 1);
     split->setChildrenCollapsible(false);
-    setCentralWidget(split);
+    split->setHandleWidth(Spacing::large); // gap between the two columns
+
+    // Window edge padding.
+    auto *central = new QWidget;
+    auto *cl = new QVBoxLayout(central);
+    cl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
+    cl->addWidget(split);
+    setCentralWidget(central);
 
     // ---- Wiring ---------------------------------------------------------
     for (auto *e : {m_url, m_user, m_agent, m_output})

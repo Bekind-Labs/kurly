@@ -22,6 +22,7 @@ qt_add_executable(kurly
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    src/spacing.h
 )
 target_link_libraries(kurly PRIVATE kurly_core Qt6::Widgets)
 
