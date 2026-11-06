@@ -28,12 +28,14 @@ ImportDialog::ImportDialog(QWidget *parent)
     layout->addWidget(intro);
 
     m_input = new QPlainTextEdit;
+    m_input->setObjectName(QStringLiteral("input"));
     m_input->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     m_input->setPlaceholderText(QStringLiteral("curl 'https://example.com/api' -H 'accept: application/json'"));
     m_input->setTabChangesFocus(true);
     layout->addWidget(m_input, 1);
 
     m_error = new QLabel;
+    m_error->setObjectName(QStringLiteral("error"));
     m_error->setWordWrap(true);
     m_error->setStyleSheet(QStringLiteral("color: #c62828;"));
     m_error->hide();

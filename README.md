@@ -6,7 +6,8 @@ Fill in the form on the left (URL, method, headers, body, auth, common
 options) and the matching `curl` command updates live on the right. Click
 **Copy command** to put it on the clipboard, or **Run** (Ctrl/⌘+Return) to
 send the request with your installed `curl` and see the output below the
-command. You can switch the command to long option names (`--location` vs
+command. JSON and XML responses are shown indented (toggle **Format
+JSON/XML** to see the raw output). You can switch the command to long option names (`--location` vs
 `-L`) or split it across multiple lines.
 
 Already have a command? Click **Import curl command…** (Ctrl/⌘+Shift+I) and
@@ -81,8 +82,36 @@ To add Kurly to your desktop's app launcher (with its icon), run
 ## Tests
 
 ```bash
-ctest --test-dir build
+ctest --test-dir build --output-on-failure
 ```
+
+| Test | Covers |
+|---|---|
+| `tst_curlcommand` | Building commands, shell quoting |
+| `tst_curlparser` | Importing commands: bash/cmd quoting, browser "Copy as cURL" output, every supported option, build→parse round trips |
+| `tst_responseformatter` | JSON/XML pretty-printing, `--include` header handling |
+| `tst_importdialog` | The import dialog: clipboard pre-fill, error messages |
+| `tst_mainwindow` | The window end to end: form ↔ command, headers, copy, language switching, import, scrolling, and **Run** against a local test server (success, HTTP errors, timeouts, stop, huge responses, formatting) |
+| `tst_translations` | Every Japanese string is translated, with matching `%1` placeholders |
+| `translations_up_to_date` | No UI strings were added without updating `translations/kurly_ja.ts` |
+
+The widget tests run with Qt's `offscreen` platform, so no windows open. The
+**Run** tests need `curl` installed (they're skipped otherwise) but no
+internet connection.
+
+To measure coverage (GCC/Clang), install [gcovr](https://gcovr.com) and:
+
+```bash
+cmake -S . -B build-cov -DKURLY_COVERAGE=ON && cmake --build build-cov
+```
+
+```bash
+ctest --test-dir build-cov && gcovr -r . build-cov --filter src/ --exclude src/main.cpp
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) builds and runs all tests on
+Linux, macOS and Windows for every push and pull request, and reports
+coverage.
 
 ## Translations
 
@@ -104,7 +133,8 @@ and the Windows `kurly.ico`.
 
 - `src/curlcommand.*` – GUI-independent command builder and shell quoting
 - `src/curlparser.*` – GUI-independent parser for importing existing curl commands
+- `src/responseformatter.*` – GUI-independent JSON/XML pretty-printing
 - `src/importdialog.*` – the import dialog
 - `src/mainwindow.*` – the form, command/response panes, running curl, and language switching
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
-- `tests/` – unit tests for the command builder and parser
+- `tests/` – unit and widget tests (see above)

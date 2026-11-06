@@ -3,6 +3,17 @@
 #include <QRegularExpression>
 #include <QStringList>
 
+bool CurlOptions::operator==(const CurlOptions &o) const
+{
+    return url == o.url && method == o.method && headers == o.headers && body == o.body
+           && user == o.user && userAgent == o.userAgent && outputFile == o.outputFile
+           && maxTimeSeconds == o.maxTimeSeconds && followRedirects == o.followRedirects
+           && insecure == o.insecure && verbose == o.verbose && silent == o.silent
+           && includeHeaders == o.includeHeaders && compressed == o.compressed
+           && failOnError == o.failOnError && longOptions == o.longOptions
+           && multiline == o.multiline;
+}
+
 namespace CurlCommand {
 
 QString shellQuote(const QString &s)

@@ -3,6 +3,7 @@
 #include "curlcommand.h"
 #include "curlparser.h"
 #include "importdialog.h"
+#include "responseformatter.h"
 #include "spacing.h"
 
 #include <QApplication>
@@ -23,6 +24,7 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QSettings>
 #include <QShortcut>
@@ -32,7 +34,36 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <vector>
+
+namespace {
+
+// QPlainTextEdit word-wraps very long lines in quadratic time (a 500k-char
+// line takes ~20s), which minified JSON responses easily hit. Turn wrapping
+// off for text like that; it's unreadable wrapped anyway.
+void setTextWrappingSensibly(QPlainTextEdit *edit, const QString &text)
+{
+    constexpr qsizetype kMaxWrappedLine = 10000;
+    qsizetype longest = 0, start = 0;
+    while (start <= text.size()) {
+        qsizetype end = text.indexOf(QLatin1Char('\n'), start);
+        if (end < 0)
+            end = text.size();
+        longest = std::max(longest, end - start);
+        start = end + 1;
+    }
+    const auto mode = longest > kMaxWrappedLine ? QPlainTextEdit::NoWrap
+                                                : QPlainTextEdit::WidgetWidth;
+    // Switch modes on an empty document so the old mode never lays out the new text.
+    if (edit->lineWrapMode() != mode) {
+        edit->clear();
+        edit->setLineWrapMode(mode);
+    }
+    edit->setPlainText(text);
+}
+
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -49,7 +80,9 @@ MainWindow::MainWindow(QWidget *parent)
     setLanguage(m_language->currentData().toString());
 
     // Window sizes are expressed in grid units, per the HIG.
-    setMinimumSize(40 * Spacing::gridUnit, 30 * Spacing::gridUnit);
+    // The minimum width comes from the layout (it depends on the language);
+    // the form scrolls vertically, so only a minimum height is needed.
+    setMinimumHeight(20 * Spacing::gridUnit);
     resize(62 * Spacing::gridUnit, 44 * Spacing::gridUnit);
 }
 
@@ -222,7 +255,11 @@ void MainWindow::buildUi()
     m_responseLabel = new QLabel;
     m_status = new QLabel;
     m_status->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_pretty = new QCheckBox;
+    m_pretty->setChecked(QSettings().value(QStringLiteral("prettyPrint"), true).toBool());
+    m_pretty->setEnabled(false);
     statusRow->addWidget(m_responseLabel);
+    statusRow->addWidget(m_pretty);
     statusRow->addStretch();
     statusRow->addWidget(m_status);
     pl->addLayout(statusRow);
@@ -230,6 +267,15 @@ void MainWindow::buildUi()
     m_response->setReadOnly(true);
     m_response->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     pl->addWidget(m_response, 1);
+
+    m_renderTimer = new QTimer(this);
+    m_renderTimer->setSingleShot(true);
+    m_renderTimer->setInterval(100);
+    connect(m_renderTimer, &QTimer::timeout, this, &MainWindow::renderResponse);
+    connect(m_pretty, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue(QStringLiteral("prettyPrint"), on);
+        renderResponse();
+    });
 
     auto *right = new QSplitter(Qt::Vertical);
     right->addWidget(commandPane);
@@ -239,8 +285,20 @@ void MainWindow::buildUi()
     right->setChildrenCollapsible(false);
     right->setHandleWidth(Spacing::large); // gap between command and response
 
+    // The form scrolls instead of squashing its fields when the window is small.
+    auto *formScroll = m_formScroll = new QScrollArea;
+    formScroll->setObjectName(QStringLiteral("formScroll"));
+    formScroll->setWidget(form);
+    formScroll->setWidgetResizable(true);
+    formScroll->setFrameShape(QFrame::NoFrame); // frameless container: no padding
+    formScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // The scroll area's viewport would otherwise paint the form in the
+    // "base" (text field) color instead of the window background.
+    formScroll->viewport()->setAutoFillBackground(false);
+    form->setAutoFillBackground(false);
+
     auto *split = new QSplitter;
-    split->addWidget(form);
+    split->addWidget(formScroll);
     split->addWidget(right);
     split->setStretchFactor(0, 1);
     split->setStretchFactor(1, 1);
@@ -253,6 +311,35 @@ void MainWindow::buildUi()
     cl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     cl->addWidget(split);
     setCentralWidget(central);
+
+    // Stable names for tests and accessibility tooling.
+    m_url->setObjectName(QStringLiteral("url"));
+    m_method->setObjectName(QStringLiteral("method"));
+    m_headers->setObjectName(QStringLiteral("headers"));
+    m_addHeader->setObjectName(QStringLiteral("addHeader"));
+    m_removeHeader->setObjectName(QStringLiteral("removeHeader"));
+    m_body->setObjectName(QStringLiteral("body"));
+    m_user->setObjectName(QStringLiteral("user"));
+    m_agent->setObjectName(QStringLiteral("userAgent"));
+    m_timeout->setObjectName(QStringLiteral("timeout"));
+    m_output->setObjectName(QStringLiteral("outputFile"));
+    m_follow->setObjectName(QStringLiteral("followRedirects"));
+    m_insecure->setObjectName(QStringLiteral("insecure"));
+    m_verbose->setObjectName(QStringLiteral("verbose"));
+    m_silent->setObjectName(QStringLiteral("silent"));
+    m_include->setObjectName(QStringLiteral("includeHeaders"));
+    m_fail->setObjectName(QStringLiteral("failOnError"));
+    m_compressed->setObjectName(QStringLiteral("compressed"));
+    m_longOpts->setObjectName(QStringLiteral("longOptions"));
+    m_multiline->setObjectName(QStringLiteral("multiline"));
+    m_result->setObjectName(QStringLiteral("command"));
+    m_copy->setObjectName(QStringLiteral("copy"));
+    m_run->setObjectName(QStringLiteral("run"));
+    m_response->setObjectName(QStringLiteral("response"));
+    m_pretty->setObjectName(QStringLiteral("pretty"));
+    m_status->setObjectName(QStringLiteral("status"));
+    m_language->setObjectName(QStringLiteral("language"));
+    m_import->setObjectName(QStringLiteral("import"));
 
     // ---- Wiring ---------------------------------------------------------
     for (auto *e : {m_url, m_user, m_agent, m_output})
@@ -332,8 +419,18 @@ void MainWindow::retranslateUi()
     m_multiline->setText(tr("Split across multiple lines"));
     m_copy->setText(tr("Copy command"));
     m_responseLabel->setText(tr("Response:"));
+    m_pretty->setText(tr("Format JSON/XML"));
+    m_pretty->setToolTip(tr("Show JSON and XML responses indented. Available once a request "
+                            "finishes with a complete JSON or XML response."));
     m_response->setPlaceholderText(tr("Press Run to send the request. curl's output appears here."));
     updateRunState();
+    renderResponse(); // e.g. the "[Output truncated]" note
+
+    // The form only scrolls vertically, so the column must stay wide enough
+    // for its widest row. Labels change width with the language.
+    m_formScroll->widget()->adjustSize();
+    m_formScroll->setMinimumWidth(m_formScroll->widget()->minimumSizeHint().width()
+                                  + m_formScroll->verticalScrollBar()->sizeHint().width());
 }
 
 void MainWindow::setLanguage(const QString &code)
@@ -413,7 +510,8 @@ CurlOptions MainWindow::currentOptions() const
 void MainWindow::updateCommand()
 {
     const QString cmd = CurlCommand::build(currentOptions());
-    m_result->setPlainText(cmd);
+    if (cmd != m_result->toPlainText())
+        setTextWrappingSensibly(m_result, cmd);
     m_copy->setEnabled(!cmd.isEmpty());
     updateRunState();
 }
@@ -442,65 +540,100 @@ void MainWindow::runOrStop()
     // clutter the output pane. This flag hides it but still shows errors.
     args.prepend(QStringLiteral("--no-progress-meter"));
 
-    m_response->clear();
-    m_responseChars = 0;
+    m_rawOutput.clear();
+    m_stdout.clear();
+    m_stderr.clear();
     m_truncated = false;
     m_stopRequested = false;
-    m_decoder.resetState();
+    m_outDecoder.resetState();
+    m_errDecoder.resetState();
+    renderResponse();
 
     m_process = new QProcess(this);
-    m_process->setProcessChannelMode(QProcess::MergedChannels);
     // GUI apps often start in "/"; use somewhere writable for --output.
     m_process->setWorkingDirectory(QDir::homePath());
-    connect(m_process, &QProcess::readyRead, this, &MainWindow::readProcessOutput);
+    connect(m_process, &QProcess::readyReadStandardOutput, this, &MainWindow::readStdout);
+    connect(m_process, &QProcess::readyReadStandardError, this, &MainWindow::readStderr);
     connect(m_process, &QProcess::finished, this, &MainWindow::processFinished);
     connect(m_process, &QProcess::errorOccurred, this, &MainWindow::processError);
 
     m_runState = RunState::Running;
     m_elapsed.start();
     updateRunState();
-    m_process->start(QStringLiteral("curl"), args, QIODevice::ReadOnly);
+    m_process->start(m_curlProgram, args, QIODevice::ReadOnly);
 }
 
-void MainWindow::readProcessOutput()
+void MainWindow::readStdout()
 {
     if (m_process)
-        appendResponse(m_decoder.decode(m_process->readAll()));
+        appendOutput(m_outDecoder.decode(m_process->readAllStandardOutput()), true);
 }
 
-void MainWindow::appendResponse(const QString &text)
+void MainWindow::readStderr()
 {
-    // Keep the UI responsive if someone downloads something large.
-    constexpr qint64 kMaxChars = 2 * 1024 * 1024;
+    if (m_process)
+        appendOutput(m_errDecoder.decode(m_process->readAllStandardError()), false);
+}
+
+void MainWindow::appendOutput(const QString &text, bool isStdout)
+{
+    // Keep memory and the UI in check if someone downloads something large.
+    constexpr qsizetype kMaxChars = 2 * 1024 * 1024;
     if (m_truncated || text.isEmpty())
         return;
     QString chunk = text;
-    if (m_responseChars + chunk.size() > kMaxChars) {
-        chunk.truncate(int(kMaxChars - m_responseChars));
+    if (m_rawOutput.size() + chunk.size() > kMaxChars) {
+        chunk.truncate(kMaxChars - m_rawOutput.size());
         m_truncated = true;
     }
-    m_responseChars += chunk.size();
+    m_rawOutput += chunk;
+    (isStdout ? m_stdout : m_stderr) += chunk;
+    // Redraw at most every 100ms rather than per chunk: re-laying out a
+    // long line for every chunk gets quadratically slow.
+    if (!m_renderTimer->isActive())
+        m_renderTimer->start();
+}
 
-    auto *bar = m_response->verticalScrollBar();
-    const bool atBottom = bar->value() == bar->maximum();
-    QTextCursor c(m_response->document());
-    c.movePosition(QTextCursor::End);
-    c.insertText(chunk);
+void MainWindow::renderResponse()
+{
+    m_renderTimer->stop();
+    QString text = m_rawOutput;
+    // Format once curl is done, if the whole response arrived.
+    const bool done = m_runState != RunState::Running;
+    m_pretty->setEnabled(false);
+    if (done && !m_truncated && !m_stdout.isEmpty()) {
+        const auto formatted = ResponseFormatter::format(m_stdout);
+        if (formatted.kind != ResponseFormatter::Kind::None) {
+            m_pretty->setEnabled(true);
+            if (m_pretty->isChecked()) {
+                // curl's own messages (errors, -v output) come first.
+                text = m_stderr + formatted.text;
+            }
+        }
+    }
     if (m_truncated)
-        c.insertText(QLatin1Char('\n') + tr("[Output truncated]") + QLatin1Char('\n'));
-    if (atBottom)
+        text += QLatin1Char('\n') + tr("[Output truncated]") + QLatin1Char('\n');
+
+    if (text == m_response->toPlainText())
+        return;
+    auto *bar = m_response->verticalScrollBar();
+    const bool follow = !done && bar->value() == bar->maximum();
+    setTextWrappingSensibly(m_response, text);
+    if (follow)
         bar->setValue(bar->maximum());
 }
 
 void MainWindow::processFinished(int exitCode, QProcess::ExitStatus status)
 {
-    readProcessOutput();
+    readStdout();
+    readStderr();
     m_elapsedMs = m_elapsed.elapsed();
     m_exitCode = exitCode;
     m_runState = status == QProcess::NormalExit ? RunState::Finished : RunState::Crashed;
     m_process->deleteLater();
     m_process = nullptr;
     updateRunState();
+    renderResponse();
 }
 
 void MainWindow::processError(QProcess::ProcessError error)

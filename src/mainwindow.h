@@ -15,8 +15,8 @@ class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
 class QTableWidget;
-class QToolButton;
-class QFormLayout;
+class QTimer;
+class QScrollArea;
 struct CurlOptions;
 
 class MainWindow : public QMainWindow
@@ -25,6 +25,13 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+    // The request currently described by the form, and loading one into it.
+    CurlOptions currentOptions() const;
+    void loadOptions(const CurlOptions &o);
+
+    // The curl executable used by Run. Defaults to "curl" on the PATH.
+    void setCurlProgram(const QString &program) { m_curlProgram = program; }
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -36,7 +43,9 @@ private slots:
     void removeSelectedHeaders();
     void setLanguage(const QString &code);
     void runOrStop();
-    void readProcessOutput();
+    void readStdout();
+    void readStderr();
+    void renderResponse();
     void processFinished(int exitCode, QProcess::ExitStatus status);
     void processError(QProcess::ProcessError error);
     void importCommand();
@@ -44,9 +53,7 @@ private slots:
 private:
     void buildUi();
     void retranslateUi();
-    CurlOptions currentOptions() const;
-    void loadOptions(const CurlOptions &o);
-    void appendResponse(const QString &text);
+    void appendOutput(const QString &text, bool isStdout);
     void updateRunState();
     QString exitCodeHint(int code) const;
 
@@ -54,12 +61,19 @@ private:
     RunState m_runState = RunState::Idle;
     int m_exitCode = 0;
     qint64 m_elapsedMs = 0;
-    qint64 m_responseChars = 0;
+    // curl's output: everything in arrival order (for the raw view), plus
+    // stdout (the response, for formatting) and stderr (curl's messages).
+    QString m_rawOutput;
+    QString m_stdout;
+    QString m_stderr;
     bool m_truncated = false;
+    QTimer *m_renderTimer = nullptr;
     bool m_stopRequested = false;
     QProcess *m_process = nullptr;
+    QString m_curlProgram = QStringLiteral("curl");
     QElapsedTimer m_elapsed;
-    QStringDecoder m_decoder{QStringDecoder::Utf8};
+    QStringDecoder m_outDecoder{QStringDecoder::Utf8};
+    QStringDecoder m_errDecoder{QStringDecoder::Utf8};
 
     QTranslator m_translator;
 
@@ -87,5 +101,7 @@ private:
     QPushButton *m_copy = nullptr, *m_run = nullptr;
     QLabel *m_responseLabel = nullptr, *m_status = nullptr;
     QPlainTextEdit *m_response;
+    QCheckBox *m_pretty = nullptr;
+    QScrollArea *m_formScroll = nullptr;
     QComboBox *m_language;
 };

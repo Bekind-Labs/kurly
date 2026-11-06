@@ -136,6 +136,71 @@ private slots:
         QVERIFY(CurlParser::parse("curl.exe https://x").ok());
     }
 
+    void ansiCEscapes()
+    {
+        bool ok = true;
+        const auto args = CurlParser::tokenize(
+            "curl $'a\\tb\\rc\\ad\\be\\ef\\fg\\vh' $'\\x41\\x\\101\\q\\?\\\"\\\\' $'\\U0001F600'", &ok);
+        QVERIFY(ok);
+        QCOMPARE(args.size(), 4);
+        QCOMPARE(args[1], QString("a\tb\rc\ad\be\x1b" "f\fg\vh"));
+        // \x41, \x with no digits (kept), octal 101, unknown \q (kept), \? \" \\.
+        QCOMPARE(args[2], QString("A\\xA\\q?\"\\"));
+        QCOMPARE(args[3], QString::fromUtf8("\xF0\x9F\x98\x80"));
+        CurlParser::tokenize("curl $'open", &ok);
+        QVERIFY(!ok);
+        CurlParser::tokenize("curl \"open", &ok);
+        QVERIFY(!ok);
+    }
+
+    void posixDetails()
+    {
+        bool ok = true;
+        // Trailing lone backslash, comments, empty quoted args, adjacent quoting.
+        QCOMPARE(CurlParser::tokenize("curl a'b'\"c\"d '' # comment here\n -L \\", &ok),
+                 (QStringList{"curl", "abcd", "", "-L"}));
+        QVERIFY(ok);
+        QCOMPARE(CurlParser::tokenize("curl \"a\\nb\\\nc\"", &ok), (QStringList{"curl", "a\\nbc"}));
+    }
+
+    void windowsDetails()
+    {
+        bool ok = true;
+        // Plain-quoted cmd style: carets inside quotes are literal; even
+        // backslashes before a quote halve and the quote still closes;
+        // backslashes elsewhere are literal.
+        QCOMPARE(CurlParser::tokenize("curl \"a^b\" ^\n \"c\\\\\" d\\e", &ok),
+                 (QStringList{"curl", "a^b", "c\\", "d\\e"}));
+        QVERIFY(ok);
+        // Escaped literal newline (^ + two newlines) inside a ^"-quoted arg.
+        QCOMPARE(CurlParser::tokenize("curl ^\"line1^\n\nline2^\"", &ok),
+                 (QStringList{"curl", "line1\nline2"}));
+        CurlParser::tokenize("curl ^\"open \"x", &ok);
+        QVERIFY(!ok);
+    }
+
+    void optionDetails()
+    {
+        const auto r = CurlParser::parse(
+            "curl -H 'X-Empty;' -H 'nocolon' -H @headers.txt -b cookies.txt -d @body.json "
+            "--data-urlencode q=a+b -G -m soon -q --url https://first.test https://second.test "
+            "-- -not-an-option");
+        QVERIFY(r.ok());
+        QCOMPARE(r.options.url, QString("https://first.test"));
+        QCOMPARE(r.options.headers, (Headers{{"X-Empty", ""}}));
+        QCOMPARE(r.options.body, QString("q=a+b"));
+        QCOMPARE(r.options.maxTimeSeconds, 0);
+        QCOMPARE(r.ignored, (QStringList{"-H nocolon", "-H @headers.txt", "-b cookies.txt",
+                                         "-d @body.json", "-G", "-q", "https://second.test",
+                                         "-not-an-option"}));
+    }
+
+    void onlyPrompt()
+    {
+        QCOMPARE(CurlParser::parse("$").error, CurlParser::Error::Empty);
+        QCOMPARE(CurlParser::parse("# just a comment").error, CurlParser::Error::Empty);
+    }
+
     void roundTrip()
     {
         CurlOptions o;

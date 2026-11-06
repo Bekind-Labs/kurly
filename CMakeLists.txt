@@ -5,15 +5,44 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
+# Sources contain UTF-8 (Japanese) literals; MSVC otherwise assumes the
+# system code page and garbles them.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets LinguistTools Test)
 
-# UI-independent logic, shared by the app and the tests.
+option(KURLY_BUILD_TESTS "Build the unit tests" ON)
+option(KURLY_COVERAGE "Instrument kurly_core/kurly_gui for code coverage (GCC/Clang)" OFF)
+
+# UI-independent logic: building and parsing curl command lines.
 add_library(kurly_core STATIC
     src/curlcommand.cpp src/curlcommand.h
     src/curlparser.cpp src/curlparser.h
+    src/responseformatter.cpp src/responseformatter.h
 )
 target_include_directories(kurly_core PUBLIC src)
 target_link_libraries(kurly_core PUBLIC Qt6::Core)
+
+# The window and dialogs, in a library so tests can drive them directly.
+add_library(kurly_gui STATIC
+    src/mainwindow.cpp src/mainwindow.h
+    src/importdialog.cpp src/importdialog.h
+    src/spacing.h
+)
+target_link_libraries(kurly_gui PUBLIC kurly_core Qt6::Widgets)
+
+# Source strings are English; Japanese is provided as a translation.
+# The compiled .qm files are embedded under :/i18n.
+qt_add_translations(kurly_gui TS_FILES translations/kurly_ja.ts)
+
+if(KURLY_COVERAGE)
+    foreach(target kurly_core kurly_gui)
+        target_compile_options(${target} PRIVATE --coverage -O0 -g)
+        target_link_options(${target} PUBLIC --coverage)
+    endforeach()
+endif()
 
 set(KURLY_ICON_SIZES 16 32 48 64 128 256 512)
 set(KURLY_ICON_PNGS)
@@ -21,15 +50,8 @@ foreach(size IN LISTS KURLY_ICON_SIZES)
     list(APPEND KURLY_ICON_PNGS icons/png/kurly-${size}.png)
 endforeach()
 
-qt_add_executable(kurly
-    src/main.cpp
-    src/mainwindow.cpp
-    src/mainwindow.h
-    src/spacing.h
-    src/importdialog.cpp
-    src/importdialog.h
-)
-target_link_libraries(kurly PRIVATE kurly_core Qt6::Widgets)
+qt_add_executable(kurly src/main.cpp)
+target_link_libraries(kurly PRIVATE kurly_gui)
 
 # Window/taskbar icon, embedded so it works on every platform.
 qt_add_resources(kurly "icons"
@@ -73,15 +95,7 @@ if(UNIX AND NOT APPLE)
     endforeach()
 endif()
 
-# Source strings are English; Japanese is provided as a translation.
-# The compiled .qm files are embedded into the executable under :/i18n.
-qt_add_translations(kurly TS_FILES translations/kurly_ja.ts)
-
-enable_testing()
-qt_add_executable(tst_curlcommand tests/tst_curlcommand.cpp)
-target_link_libraries(tst_curlcommand PRIVATE kurly_core Qt6::Test)
-add_test(NAME curlcommand COMMAND tst_curlcommand)
-
-qt_add_executable(tst_curlparser tests/tst_curlparser.cpp)
-target_link_libraries(tst_curlparser PRIVATE kurly_core Qt6::Test)
-add_test(NAME curlparser COMMAND tst_curlparser)
+if(KURLY_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

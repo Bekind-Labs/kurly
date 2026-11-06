@@ -28,6 +28,9 @@ struct CurlOptions
 
     bool longOptions = false; // --location instead of -L
     bool multiline = false;   // one argument per line, joined with backslashes
+
+    bool operator==(const CurlOptions &other) const;
+    bool operator!=(const CurlOptions &other) const { return !(*this == other); }
 };
 
 namespace CurlCommand {
