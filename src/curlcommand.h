@@ -3,6 +3,7 @@
 #include <QList>
 #include <QPair>
 #include <QString>
+#include <QStringList>
 
 // A description of a curl invocation, and the logic that turns it into a
 // shell-ready command line. Has no GUI dependencies so it can be unit tested.
@@ -35,7 +36,11 @@ namespace CurlCommand {
 // characters are returned unquoted.
 QString shellQuote(const QString &s);
 
-// Build the command line. Returns an empty string if there is no URL yet.
+// The arguments to pass to the curl executable (not including "curl"
+// itself), unquoted. Empty if there is no URL yet.
+QStringList arguments(const CurlOptions &o);
+
+// Build the command line for display/copying. Returns an empty string if there is no URL yet.
 QString build(const CurlOptions &o);
 
 } // namespace CurlCommand

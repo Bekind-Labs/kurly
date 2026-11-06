@@ -1,6 +1,9 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QMainWindow>
+#include <QProcess>
+#include <QStringDecoder>
 #include <QTranslator>
 
 class QCheckBox;
@@ -14,12 +17,14 @@ class QSpinBox;
 class QTableWidget;
 class QToolButton;
 class QFormLayout;
+struct CurlOptions;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -30,10 +35,29 @@ private slots:
     void addHeaderRow(const QString &name = {}, const QString &value = {});
     void removeSelectedHeaders();
     void setLanguage(const QString &code);
+    void runOrStop();
+    void readProcessOutput();
+    void processFinished(int exitCode, QProcess::ExitStatus status);
+    void processError(QProcess::ProcessError error);
 
 private:
     void buildUi();
     void retranslateUi();
+    CurlOptions currentOptions() const;
+    void appendResponse(const QString &text);
+    void updateRunState();
+    QString exitCodeHint(int code) const;
+
+    enum class RunState { Idle, Running, Finished, Crashed, NotFound };
+    RunState m_runState = RunState::Idle;
+    int m_exitCode = 0;
+    qint64 m_elapsedMs = 0;
+    qint64 m_responseChars = 0;
+    bool m_truncated = false;
+    bool m_stopRequested = false;
+    QProcess *m_process = nullptr;
+    QElapsedTimer m_elapsed;
+    QStringDecoder m_decoder{QStringDecoder::Utf8};
 
     QTranslator m_translator;
 
@@ -57,6 +81,8 @@ private:
     // Right pane
     QLabel *m_resultLabel, *m_languageLabel;
     QPlainTextEdit *m_result;
-    QPushButton *m_copy;
+    QPushButton *m_copy = nullptr, *m_run = nullptr;
+    QLabel *m_responseLabel = nullptr, *m_status = nullptr;
+    QPlainTextEdit *m_response;
     QComboBox *m_language;
 };

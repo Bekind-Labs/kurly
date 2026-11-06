@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
+#include <QDir>
 #include <QComboBox>
 #include <QEvent>
 #include <QFontDatabase>
@@ -18,7 +19,9 @@
 #include <QLocale>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QSettings>
+#include <QShortcut>
 #include <QSpinBox>
 #include <QSplitter>
 #include <QTableWidget>
@@ -39,7 +42,17 @@ MainWindow::MainWindow(QWidget *parent)
     m_language->setCurrentIndex(idx < 0 ? 0 : idx);
     setLanguage(m_language->currentData().toString());
 
-    resize(1000, 640);
+    resize(1100, 760);
+}
+
+MainWindow::~MainWindow()
+{
+    // Don't let the process report back into a half-destroyed window.
+    if (m_process) {
+        m_process->disconnect(this);
+        m_process->kill();
+        m_process->waitForFinished(1000);
+    }
 }
 
 void MainWindow::buildUi()
@@ -49,6 +62,7 @@ void MainWindow::buildUi()
     auto *formLayout = new QVBoxLayout(form);
 
     auto *top = new QFormLayout;
+    top->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     m_urlLabel = new QLabel;
     m_url = new QLineEdit;
     m_methodLabel = new QLabel;
@@ -88,6 +102,7 @@ void MainWindow::buildUi()
     // Auth & misc
     m_authBox = new QGroupBox;
     auto *al = new QFormLayout(m_authBox);
+    al->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     m_userLabel = new QLabel;
     m_user = new QLineEdit;
     m_agentLabel = new QLabel;
@@ -121,9 +136,10 @@ void MainWindow::buildUi()
     ol->addLayout(grid);
     formLayout->addWidget(m_optionsBox);
 
-    // ---- Right: result --------------------------------------------------
-    auto *right = new QWidget;
-    auto *rl = new QVBoxLayout(right);
+    // ---- Right: command (top) and response (bottom) ----------------------
+    auto *commandPane = new QWidget;
+    auto *rl = new QVBoxLayout(commandPane);
+    rl->setContentsMargins(0, 0, 0, 0);
 
     auto *langRow = new QHBoxLayout;
     m_languageLabel = new QLabel;
@@ -131,26 +147,56 @@ void MainWindow::buildUi()
     // Language names are shown in their own language and are not translated.
     m_language->addItem(QStringLiteral("English"), QStringLiteral("en"));
     m_language->addItem(QStringLiteral("日本語"), QStringLiteral("ja"));
+    m_resultLabel = new QLabel;
+    langRow->addWidget(m_resultLabel);
     langRow->addStretch();
     langRow->addWidget(m_languageLabel);
     langRow->addWidget(m_language);
     rl->addLayout(langRow);
 
-    m_resultLabel = new QLabel;
-    rl->addWidget(m_resultLabel);
     m_result = new QPlainTextEdit;
     m_result->setReadOnly(true);
     m_result->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     rl->addWidget(m_result, 1);
 
+    auto *toggles = new QHBoxLayout;
     m_longOpts = new QCheckBox;
     m_multiline = new QCheckBox;
-    rl->addWidget(m_longOpts);
-    rl->addWidget(m_multiline);
+    toggles->addWidget(m_longOpts);
+    toggles->addWidget(m_multiline);
+    toggles->addStretch();
+    rl->addLayout(toggles);
 
+    auto *buttons = new QHBoxLayout;
     m_copy = new QPushButton;
-    m_copy->setDefault(true);
-    rl->addWidget(m_copy);
+    m_run = new QPushButton;
+    m_run->setDefault(true);
+    buttons->addWidget(m_copy, 1);
+    buttons->addWidget(m_run, 1);
+    rl->addLayout(buttons);
+
+    auto *responsePane = new QWidget;
+    auto *pl = new QVBoxLayout(responsePane);
+    pl->setContentsMargins(0, 0, 0, 0);
+    auto *statusRow = new QHBoxLayout;
+    m_responseLabel = new QLabel;
+    m_status = new QLabel;
+    m_status->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    statusRow->addWidget(m_responseLabel);
+    statusRow->addStretch();
+    statusRow->addWidget(m_status);
+    pl->addLayout(statusRow);
+    m_response = new QPlainTextEdit;
+    m_response->setReadOnly(true);
+    m_response->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    pl->addWidget(m_response, 1);
+
+    auto *right = new QSplitter(Qt::Vertical);
+    right->addWidget(commandPane);
+    right->addWidget(responsePane);
+    right->setStretchFactor(0, 1);
+    right->setStretchFactor(1, 2);
+    right->setChildrenCollapsible(false);
 
     auto *split = new QSplitter;
     split->addWidget(form);
@@ -174,6 +220,13 @@ void MainWindow::buildUi()
     connect(m_addHeader, &QPushButton::clicked, this, [this] { addHeaderRow(); });
     connect(m_removeHeader, &QPushButton::clicked, this, &MainWindow::removeSelectedHeaders);
     connect(m_copy, &QPushButton::clicked, this, &MainWindow::copyCommand);
+    connect(m_run, &QPushButton::clicked, this, &MainWindow::runOrStop);
+    // Ctrl+Enter (Cmd+Return on macOS) runs from anywhere, even inside the body editor.
+    auto *runShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this);
+    connect(runShortcut, &QShortcut::activated, this, [this] {
+        if (m_run->isEnabled() && m_runState != RunState::Running)
+            runOrStop();
+    });
     connect(m_language, &QComboBox::currentIndexChanged, this, [this] {
         setLanguage(m_language->currentData().toString());
     });
@@ -205,6 +258,7 @@ void MainWindow::retranslateUi()
     m_timeout->setSpecialValueText(tr("None"));
     m_timeout->setSuffix(tr(" s"));
     m_outputLabel->setText(tr("Save output to file:"));
+    m_output->setToolTip(tr("When run from Kurly, relative paths are saved in your home folder."));
 
     m_optionsBox->setTitle(tr("Options"));
     m_follow->setText(tr("Follow redirects"));
@@ -221,6 +275,9 @@ void MainWindow::retranslateUi()
     m_longOpts->setText(tr("Use long option names"));
     m_multiline->setText(tr("Split across multiple lines"));
     m_copy->setText(tr("Copy command"));
+    m_responseLabel->setText(tr("Response:"));
+    m_response->setPlaceholderText(tr("Press Run to send the request. curl's output appears here."));
+    updateRunState();
 }
 
 void MainWindow::setLanguage(const QString &code)
@@ -269,7 +326,7 @@ void MainWindow::removeSelectedHeaders()
     updateCommand();
 }
 
-void MainWindow::updateCommand()
+CurlOptions MainWindow::currentOptions() const
 {
     CurlOptions o;
     o.url = m_url->text();
@@ -294,10 +351,15 @@ void MainWindow::updateCommand()
     o.compressed = m_compressed->isChecked();
     o.longOptions = m_longOpts->isChecked();
     o.multiline = m_multiline->isChecked();
+    return o;
+}
 
-    const QString cmd = CurlCommand::build(o);
+void MainWindow::updateCommand()
+{
+    const QString cmd = CurlCommand::build(currentOptions());
     m_result->setPlainText(cmd);
     m_copy->setEnabled(!cmd.isEmpty());
+    updateRunState();
 }
 
 void MainWindow::copyCommand()
@@ -305,4 +367,153 @@ void MainWindow::copyCommand()
     QApplication::clipboard()->setText(m_result->toPlainText());
     m_copy->setText(tr("Copied!"));
     QTimer::singleShot(1500, this, [this] { m_copy->setText(tr("Copy command")); });
+}
+
+// ---- Running the request ---------------------------------------------------
+
+void MainWindow::runOrStop()
+{
+    if (m_process) {
+        m_stopRequested = true;
+        m_process->kill();
+        return;
+    }
+
+    QStringList args = CurlCommand::arguments(currentOptions());
+    if (args.isEmpty())
+        return;
+    // Without a terminal, curl prints a progress table to stderr, which would
+    // clutter the output pane. This flag hides it but still shows errors.
+    args.prepend(QStringLiteral("--no-progress-meter"));
+
+    m_response->clear();
+    m_responseChars = 0;
+    m_truncated = false;
+    m_stopRequested = false;
+    m_decoder.resetState();
+
+    m_process = new QProcess(this);
+    m_process->setProcessChannelMode(QProcess::MergedChannels);
+    // GUI apps often start in "/"; use somewhere writable for --output.
+    m_process->setWorkingDirectory(QDir::homePath());
+    connect(m_process, &QProcess::readyRead, this, &MainWindow::readProcessOutput);
+    connect(m_process, &QProcess::finished, this, &MainWindow::processFinished);
+    connect(m_process, &QProcess::errorOccurred, this, &MainWindow::processError);
+
+    m_runState = RunState::Running;
+    m_elapsed.start();
+    updateRunState();
+    m_process->start(QStringLiteral("curl"), args, QIODevice::ReadOnly);
+}
+
+void MainWindow::readProcessOutput()
+{
+    if (m_process)
+        appendResponse(m_decoder.decode(m_process->readAll()));
+}
+
+void MainWindow::appendResponse(const QString &text)
+{
+    // Keep the UI responsive if someone downloads something large.
+    constexpr qint64 kMaxChars = 2 * 1024 * 1024;
+    if (m_truncated || text.isEmpty())
+        return;
+    QString chunk = text;
+    if (m_responseChars + chunk.size() > kMaxChars) {
+        chunk.truncate(int(kMaxChars - m_responseChars));
+        m_truncated = true;
+    }
+    m_responseChars += chunk.size();
+
+    auto *bar = m_response->verticalScrollBar();
+    const bool atBottom = bar->value() == bar->maximum();
+    QTextCursor c(m_response->document());
+    c.movePosition(QTextCursor::End);
+    c.insertText(chunk);
+    if (m_truncated)
+        c.insertText(QLatin1Char('\n') + tr("[Output truncated]") + QLatin1Char('\n'));
+    if (atBottom)
+        bar->setValue(bar->maximum());
+}
+
+void MainWindow::processFinished(int exitCode, QProcess::ExitStatus status)
+{
+    readProcessOutput();
+    m_elapsedMs = m_elapsed.elapsed();
+    m_exitCode = exitCode;
+    m_runState = status == QProcess::NormalExit ? RunState::Finished : RunState::Crashed;
+    m_process->deleteLater();
+    m_process = nullptr;
+    updateRunState();
+}
+
+void MainWindow::processError(QProcess::ProcessError error)
+{
+    if (error != QProcess::FailedToStart || !m_process)
+        return; // crashes/kills are reported through finished()
+    m_runState = RunState::NotFound;
+    m_process->deleteLater();
+    m_process = nullptr;
+    updateRunState();
+}
+
+QString MainWindow::exitCodeHint(int code) const
+{
+    switch (code) {
+    case 3:  return tr("malformed URL");
+    case 6:  return tr("could not resolve host");
+    case 7:  return tr("could not connect to server");
+    case 22: return tr("HTTP error returned");
+    case 28: return tr("timed out");
+    case 35: return tr("TLS/SSL connection error");
+    case 47: return tr("too many redirects");
+    case 52: return tr("server returned nothing");
+    case 60: return tr("TLS certificate problem");
+    default: return {};
+    }
+}
+
+void MainWindow::updateRunState()
+{
+    if (!m_run || !m_status)
+        return;
+
+    const bool running = m_runState == RunState::Running;
+    m_run->setText(running ? tr("Stop") : tr("Run"));
+    m_run->setEnabled(running || !m_result->toPlainText().isEmpty());
+
+    QString text;
+    QString color;
+    switch (m_runState) {
+    case RunState::Idle:
+        break;
+    case RunState::Running:
+        text = tr("Running…");
+        break;
+    case RunState::Finished: {
+        const QString time = tr("%1 ms").arg(m_elapsedMs);
+        if (m_exitCode == 0) {
+            text = tr("Done · %1").arg(time);
+            color = QStringLiteral("#2e7d32");
+        } else {
+            const QString hint = exitCodeHint(m_exitCode);
+            text = hint.isEmpty() ? tr("curl exited with code %1 · %2").arg(m_exitCode).arg(time)
+                                  : tr("curl exited with code %1 (%2) · %3")
+                                        .arg(m_exitCode).arg(hint, time);
+            color = QStringLiteral("#c62828");
+        }
+        break;
+    }
+    case RunState::Crashed:
+        text = m_stopRequested ? tr("Stopped") : tr("curl stopped unexpectedly");
+        color = m_stopRequested ? QString() : QStringLiteral("#c62828");
+        break;
+    case RunState::NotFound:
+        text = tr("Could not start curl. Is it installed and on your PATH?");
+        color = QStringLiteral("#c62828");
+        break;
+    }
+    m_status->setText(text);
+    m_status->setStyleSheet(color.isEmpty() ? QString()
+                                            : QStringLiteral("color: %1;").arg(color));
 }

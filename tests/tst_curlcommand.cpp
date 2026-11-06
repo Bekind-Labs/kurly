@@ -69,6 +69,18 @@ private slots:
                          "--user 'me:secret pw' https://example.com"));
     }
 
+    void argumentsAreUnquoted()
+    {
+        CurlOptions o;
+        o.url = "https://example.com/?a=1&b=2";
+        o.method = "PATCH";
+        o.headers << qMakePair(QString("X-Name"), QString("it's me"));
+        QCOMPARE(CurlCommand::arguments(o),
+                 (QStringList{"-X", "PATCH", "-H", "X-Name: it's me",
+                              "https://example.com/?a=1&b=2"}));
+        QVERIFY(CurlCommand::arguments({}).isEmpty());
+    }
+
     void multiline()
     {
         CurlOptions o;

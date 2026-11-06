@@ -15,7 +15,10 @@ QString shellQuote(const QString &s)
     return QLatin1Char('\'') + q + QLatin1Char('\'');
 }
 
-QString build(const CurlOptions &o)
+// Each group is one option plus its value(s), unquoted. Keeping groups
+// together lets the display put each one on its own line, while
+// arguments() can flatten them for running curl directly.
+static QList<QStringList> argumentGroups(const CurlOptions &o)
 {
     const QString url = o.url.trimmed();
     if (url.isEmpty())
@@ -25,50 +28,68 @@ QString build(const CurlOptions &o)
         return QString::fromLatin1(o.longOptions ? longOpt : shortOpt);
     };
 
-    // Each entry is one "argument group" (option plus its value) so that
-    // multiline output can put each group on its own line.
-    QStringList parts;
-    parts << QStringLiteral("curl");
+    QList<QStringList> g;
 
     const QString method = o.method.trimmed().toUpper();
     if (method == QLatin1String("HEAD")) {
-        parts << opt("-I", "--head");
+        g << QStringList{opt("-I", "--head")};
     } else if (!method.isEmpty() && method != QLatin1String("GET")
                && !(method == QLatin1String("POST") && !o.body.isEmpty())) {
         // curl already switches to POST when a body is supplied.
-        parts << opt("-X", "--request") + QLatin1Char(' ') + shellQuote(method);
+        g << QStringList{opt("-X", "--request"), method};
     }
 
-    if (o.followRedirects) parts << opt("-L", "--location");
-    if (o.insecure)        parts << opt("-k", "--insecure");
-    if (o.verbose)         parts << opt("-v", "--verbose");
-    if (o.silent)          parts << opt("-s", "--silent");
-    if (o.includeHeaders)  parts << opt("-i", "--include");
-    if (o.failOnError)     parts << opt("-f", "--fail");
-    if (o.compressed)      parts << QStringLiteral("--compressed");
+    if (o.followRedirects) g << QStringList{opt("-L", "--location")};
+    if (o.insecure)        g << QStringList{opt("-k", "--insecure")};
+    if (o.verbose)         g << QStringList{opt("-v", "--verbose")};
+    if (o.silent)          g << QStringList{opt("-s", "--silent")};
+    if (o.includeHeaders)  g << QStringList{opt("-i", "--include")};
+    if (o.failOnError)     g << QStringList{opt("-f", "--fail")};
+    if (o.compressed)      g << QStringList{QStringLiteral("--compressed")};
 
     if (o.maxTimeSeconds > 0)
-        parts << QStringLiteral("--max-time %1").arg(o.maxTimeSeconds);
+        g << QStringList{QStringLiteral("--max-time"), QString::number(o.maxTimeSeconds)};
     if (!o.user.isEmpty())
-        parts << opt("-u", "--user") + QLatin1Char(' ') + shellQuote(o.user);
+        g << QStringList{opt("-u", "--user"), o.user};
     if (!o.userAgent.isEmpty())
-        parts << opt("-A", "--user-agent") + QLatin1Char(' ') + shellQuote(o.userAgent);
+        g << QStringList{opt("-A", "--user-agent"), o.userAgent};
 
     for (const auto &h : o.headers) {
         const QString name = h.first.trimmed();
-        if (name.isEmpty())
-            continue;
-        parts << opt("-H", "--header") + QLatin1Char(' ')
-                     + shellQuote(name + QStringLiteral(": ") + h.second);
+        if (!name.isEmpty())
+            g << QStringList{opt("-H", "--header"), name + QStringLiteral(": ") + h.second};
     }
 
     if (!o.body.isEmpty())
-        parts << QStringLiteral("--data-raw ") + shellQuote(o.body);
+        g << QStringList{QStringLiteral("--data-raw"), o.body};
     if (!o.outputFile.isEmpty())
-        parts << opt("-o", "--output") + QLatin1Char(' ') + shellQuote(o.outputFile);
+        g << QStringList{opt("-o", "--output"), o.outputFile};
 
-    parts << shellQuote(url);
+    g << QStringList{url};
+    return g;
+}
 
+QStringList arguments(const CurlOptions &o)
+{
+    QStringList args;
+    for (const auto &group : argumentGroups(o))
+        args += group;
+    return args;
+}
+
+QString build(const CurlOptions &o)
+{
+    const auto groups = argumentGroups(o);
+    if (groups.isEmpty())
+        return {};
+
+    QStringList parts{QStringLiteral("curl")};
+    for (const auto &group : groups) {
+        QStringList quoted;
+        for (const auto &arg : group)
+            quoted << shellQuote(arg);
+        parts << quoted.join(QLatin1Char(' '));
+    }
     return parts.join(o.multiline ? QStringLiteral(" \\\n  ") : QStringLiteral(" "));
 }
 
