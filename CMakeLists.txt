@@ -8,7 +8,10 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets LinguistTools Test)
 
 # UI-independent logic, shared by the app and the tests.
-add_library(kurly_core STATIC src/curlcommand.cpp src/curlcommand.h)
+add_library(kurly_core STATIC
+    src/curlcommand.cpp src/curlcommand.h
+    src/curlparser.cpp src/curlparser.h
+)
 target_include_directories(kurly_core PUBLIC src)
 target_link_libraries(kurly_core PUBLIC Qt6::Core)
 
@@ -23,6 +26,8 @@ qt_add_executable(kurly
     src/mainwindow.cpp
     src/mainwindow.h
     src/spacing.h
+    src/importdialog.cpp
+    src/importdialog.h
 )
 target_link_libraries(kurly PRIVATE kurly_core Qt6::Widgets)
 
@@ -76,3 +81,7 @@ enable_testing()
 qt_add_executable(tst_curlcommand tests/tst_curlcommand.cpp)
 target_link_libraries(tst_curlcommand PRIVATE kurly_core Qt6::Test)
 add_test(NAME curlcommand COMMAND tst_curlcommand)
+
+qt_add_executable(tst_curlparser tests/tst_curlparser.cpp)
+target_link_libraries(tst_curlparser PRIVATE kurly_core Qt6::Test)
+add_test(NAME curlparser COMMAND tst_curlparser)

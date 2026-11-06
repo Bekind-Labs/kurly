@@ -39,11 +39,13 @@ private slots:
     void readProcessOutput();
     void processFinished(int exitCode, QProcess::ExitStatus status);
     void processError(QProcess::ProcessError error);
+    void importCommand();
 
 private:
     void buildUi();
     void retranslateUi();
     CurlOptions currentOptions() const;
+    void loadOptions(const CurlOptions &o);
     void appendResponse(const QString &text);
     void updateRunState();
     QString exitCodeHint(int code) const;
@@ -68,6 +70,7 @@ private:
     QGroupBox *m_headersBox, *m_bodyBox, *m_authBox, *m_optionsBox;
     QTableWidget *m_headers;
     QPushButton *m_addHeader, *m_removeHeader;
+    QPushButton *m_import = nullptr;
     QPlainTextEdit *m_body;
     // Auth / misc
     QLabel *m_userLabel, *m_agentLabel, *m_timeoutLabel, *m_outputLabel;

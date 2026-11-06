@@ -9,6 +9,12 @@ send the request with your installed `curl` and see the output below the
 command. You can switch the command to long option names (`--location` vs
 `-L`) or split it across multiple lines.
 
+Already have a command? Click **Import curl command…** (Ctrl/⌘+Shift+I) and
+paste it, for example from your browser's developer tools (Network tab →
+right-click a request → Copy → Copy as cURL). Both the bash and Windows cmd
+formats work. If a curl command is already on the clipboard, it's filled in
+for you. Options Kurly can't represent are listed and skipped.
+
 The UI is available in **English** and **Japanese (日本語)**. It follows the
 system language on first launch, and you can switch at any time from the
 language selector in the top-right corner. The choice is remembered.
@@ -97,6 +103,8 @@ and the Windows `kurly.ico`.
 ## Layout
 
 - `src/curlcommand.*` – GUI-independent command builder and shell quoting
+- `src/curlparser.*` – GUI-independent parser for importing existing curl commands
+- `src/importdialog.*` – the import dialog
 - `src/mainwindow.*` – the form, command/response panes, running curl, and language switching
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
-- `tests/` – unit tests for the command builder
+- `tests/` – unit tests for the command builder and parser

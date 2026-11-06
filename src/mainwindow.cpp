@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 
 #include "curlcommand.h"
+#include "curlparser.h"
+#include "importdialog.h"
 #include "spacing.h"
 
 #include <QApplication>
@@ -18,6 +20,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QLocale>
+#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollBar>
@@ -28,6 +31,8 @@
 #include <QTableWidget>
 #include <QTimer>
 #include <QVBoxLayout>
+
+#include <vector>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -63,8 +68,16 @@ void MainWindow::buildUi()
     // ---- Left: the form -------------------------------------------------
     auto *form = new QWidget;
     auto *formLayout = new QVBoxLayout(form);
-    formLayout->setContentsMargins(0, 0, 0, 0);
+    // Leave room between the content and the column divider.
+    formLayout->setContentsMargins(0, 0, Spacing::large, 0);
     formLayout->setSpacing(Spacing::large); // between groups
+
+    auto *importRow = new QHBoxLayout;
+    m_import = new QPushButton;
+    m_import->setIcon(QIcon::fromTheme(QStringLiteral("edit-paste")));
+    importRow->addWidget(m_import);
+    importRow->addStretch();
+    formLayout->addLayout(importRow);
 
     auto *top = new QFormLayout;
     top->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
@@ -158,7 +171,8 @@ void MainWindow::buildUi()
     // ---- Right: command (top) and response (bottom) ----------------------
     auto *commandPane = new QWidget;
     auto *rl = new QVBoxLayout(commandPane);
-    rl->setContentsMargins(0, 0, 0, 0);
+    // Room between the content and the dividers to the left and below.
+    rl->setContentsMargins(Spacing::large, 0, 0, Spacing::large);
     rl->setSpacing(Spacing::small); // title → content, content → its controls
 
     auto *langRow = new QHBoxLayout;
@@ -200,7 +214,8 @@ void MainWindow::buildUi()
 
     auto *responsePane = new QWidget;
     auto *pl = new QVBoxLayout(responsePane);
-    pl->setContentsMargins(0, 0, 0, 0);
+    // Room between the content and the dividers to the left and above.
+    pl->setContentsMargins(Spacing::large, Spacing::large, 0, 0);
     pl->setSpacing(Spacing::small);
     auto *statusRow = new QHBoxLayout;
     statusRow->setSpacing(Spacing::large);
@@ -254,6 +269,9 @@ void MainWindow::buildUi()
     connect(m_removeHeader, &QPushButton::clicked, this, &MainWindow::removeSelectedHeaders);
     connect(m_copy, &QPushButton::clicked, this, &MainWindow::copyCommand);
     connect(m_run, &QPushButton::clicked, this, &MainWindow::runOrStop);
+    connect(m_import, &QPushButton::clicked, this, &MainWindow::importCommand);
+    auto *importShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I), this);
+    connect(importShortcut, &QShortcut::activated, this, &MainWindow::importCommand);
     // Ctrl+Enter (Cmd+Return on macOS) runs from anywhere, even inside the body editor.
     auto *runShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this);
     connect(runShortcut, &QShortcut::activated, this, [this] {
@@ -272,6 +290,11 @@ void MainWindow::retranslateUi()
 {
     setWindowTitle(tr("Kurly – curl command builder"));
 
+    m_import->setText(tr("Import curl command…"));
+    m_import->setToolTip(tr("Fill in the form from an existing curl command, such as one "
+                            "copied from a browser's developer tools (%1)")
+                             .arg(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I)
+                                      .toString(QKeySequence::NativeText)));
     m_urlLabel->setText(tr("URL:"));
     m_url->setPlaceholderText(tr("https://example.com/api"));
     m_methodLabel->setText(tr("Method:"));
@@ -549,4 +572,69 @@ void MainWindow::updateRunState()
     m_status->setText(text);
     m_status->setStyleSheet(color.isEmpty() ? QString()
                                             : QStringLiteral("color: %1;").arg(color));
+}
+
+// ---- Importing an existing command -------------------------------------------
+
+void MainWindow::importCommand()
+{
+    ImportDialog dialog(this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    const auto &result = dialog.result();
+    loadOptions(result.options);
+
+    if (!result.ignored.isEmpty()) {
+        QMessageBox box(QMessageBox::Information, tr("Import curl Command"),
+                        tr("The command was imported, but Kurly doesn't support some of "
+                           "its options, so they were skipped:"),
+                        QMessageBox::Ok, this);
+        box.setInformativeText(result.ignored.join(QLatin1Char('\n')));
+        box.exec();
+    }
+}
+
+void MainWindow::loadOptions(const CurlOptions &o)
+{
+    // Block per-field updates; rebuild the command once at the end.
+    std::vector<QSignalBlocker> blockers;
+    for (QObject *w : std::initializer_list<QObject *>{
+             m_url, m_method, m_headers, m_body, m_user, m_agent, m_output, m_timeout,
+             m_follow, m_insecure, m_verbose, m_silent, m_include, m_fail, m_compressed})
+        blockers.emplace_back(w);
+
+    m_url->setText(o.url);
+    int idx = m_method->findText(o.method);
+    if (idx < 0) {
+        m_method->addItem(o.method);
+        idx = m_method->count() - 1;
+    }
+    m_method->setCurrentIndex(idx);
+
+    m_headers->setRowCount(0);
+    for (const auto &h : o.headers) {
+        const int row = m_headers->rowCount();
+        m_headers->insertRow(row);
+        m_headers->setItem(row, 0, new QTableWidgetItem(h.first));
+        m_headers->setItem(row, 1, new QTableWidgetItem(h.second));
+    }
+
+    m_body->setPlainText(o.body);
+    m_user->setText(o.user);
+    m_agent->setText(o.userAgent);
+    m_output->setText(o.outputFile);
+    m_timeout->setValue(o.maxTimeSeconds);
+    m_follow->setChecked(o.followRedirects);
+    m_insecure->setChecked(o.insecure);
+    m_verbose->setChecked(o.verbose);
+    m_silent->setChecked(o.silent);
+    m_include->setChecked(o.includeHeaders);
+    m_fail->setChecked(o.failOnError);
+    m_compressed->setChecked(o.compressed);
+
+    blockers.clear();
+    if (o.headers.isEmpty())
+        addHeaderRow(); // also refreshes the command
+    else
+        updateCommand();
 }
