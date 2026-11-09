@@ -2,10 +2,17 @@
 
 #include <QApplication>
 #include <QIcon>
+#include <QStyleFactory>
+#include <QDebug>
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+
+#if defined(Q_OS_MACOS)
+    app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
+#endif
+
     QApplication::setApplicationName(QStringLiteral("Kurly"));
     QApplication::setOrganizationName(QStringLiteral("Bekind Labs"));
     // Matches kurly.desktop so Linux desktops (esp. Wayland) find the icon.
