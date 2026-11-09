@@ -1,0 +1,178 @@
+name: Release
+
+# Pushing a tag like v0.1.0 builds every package and creates a *draft*
+# GitHub release with them attached, for review before publishing.
+# Running it manually (Actions → Release → Run workflow), or pushing changes
+# to the packaging, only builds the packages and uploads them as workflow
+# artifacts, which checks the packaging still works.
+on:
+  push:
+    tags: ['v*'] # path filters don't apply to tag pushes
+    branches: ['**']
+    paths: ['packaging/**', '.github/workflows/release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: '6.8.3'
+
+jobs:
+  version:
+    name: Check version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Read version from CMakeLists.txt
+        run: |
+          version=$(sed -n 's/^project(kurly VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match the version in CMakeLists.txt ($version)."
+            exit 1
+          fi
+
+  linux:
+    name: Linux AppImage
+    needs: version
+    # Build on the oldest supported Ubuntu so the AppImage runs on as many
+    # distributions as possible (it needs at least this glibc).
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+      - name: Install libraries the bundled Qt plugins need
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libegl1 libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 \
+            libxcb-xinerama0 libxcb-xkb1
+      - name: Build AppImage
+        run: packaging/linux/make-appimage.sh build-release dist
+      - name: Smoke test (starts and keeps running)
+        run: |
+          chmod +x dist/*.AppImage
+          set +e
+          QT_QPA_PLATFORM=offscreen timeout 10 dist/*.AppImage --appimage-extract-and-run
+          status=$?
+          set -e
+          if [[ $status -ne 124 ]]; then echo "::error::App exited early with status $status"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+  windows:
+    name: Windows zip
+    needs: version
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Build zip
+        shell: pwsh
+        run: packaging/windows/make-zip.ps1 -BuildDir build-release -OutDir dist
+      - name: Smoke test (starts and keeps running)
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist\*.zip | Select-Object -First 1
+          Expand-Archive $zip.FullName -DestinationPath smoke
+          $exe = Get-ChildItem smoke -Recurse -Filter Kurly.exe | Select-Object -First 1
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $p = Start-Process $exe.FullName -PassThru
+          Start-Sleep -Seconds 10
+          if ($p.HasExited) { throw "App exited early with code $($p.ExitCode)" }
+          Stop-Process $p
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.zip
+          if-no-files-found: error
+
+  macos:
+    name: macOS dmg
+    needs: version
+    runs-on: macos-14
+    env:
+      # Secrets can't be used in `if:` directly.
+      HAS_SIGNING_CERT: ${{ secrets.MACOS_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+      - name: Import signing certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        if: env.HAS_SIGNING_CERT == 'true'
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password=$(uuidgen)
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+      - name: Build dmg
+        env:
+          KURLY_UNIVERSAL: '1'
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: packaging/macos/make-dmg.sh build-release dist
+      - name: Smoke test (starts and keeps running)
+        run: |
+          QT_QPA_PLATFORM=offscreen build-release/dmg/Kurly.app/Contents/MacOS/kurly &
+          pid=$!
+          sleep 10
+          kill -0 "$pid" || { echo "::error::App exited early"; exit 1; }
+          kill "$pid"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  release:
+    name: Draft GitHub release
+    needs: [version, linux, windows, macos]
+    # Publish even if the macOS job couldn't run (its .dmg can be built
+    # locally with packaging/macos/make-dmg.sh and attached to the draft).
+    if: >-
+      always() && github.ref_type == 'tag' &&
+      needs.linux.result == 'success' && needs.windows.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Kurly ${{ needs.version.outputs.version }}
+          generate_release_notes: true
+          files: dist/*

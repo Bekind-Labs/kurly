@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication::setApplicationName(QStringLiteral("Kurly"));
+    QApplication::setApplicationVersion(QStringLiteral(KURLY_VERSION));
     QApplication::setOrganizationName(QStringLiteral("Bekind Labs"));
     // Matches kurly.desktop so Linux desktops (esp. Wayland) find the icon.
     QApplication::setDesktopFileName(QStringLiteral("kurly"));

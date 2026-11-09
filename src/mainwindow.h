@@ -75,7 +75,8 @@ private:
     QStringDecoder m_outDecoder{QStringDecoder::Utf8};
     QStringDecoder m_errDecoder{QStringDecoder::Utf8};
 
-    QTranslator m_translator;
+    QTranslator m_translator;   // Kurly's own strings
+    QTranslator m_qtTranslator; // Qt's built-in strings (OK buttons, context menus)
 
     // Request
     QLabel *m_urlLabel, *m_methodLabel;

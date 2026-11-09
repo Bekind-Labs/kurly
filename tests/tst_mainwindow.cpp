@@ -325,8 +325,16 @@ private slots:
         QVERIFY(w->windowTitle().contains(QString::fromUtf8("コマンドビルダー")));
         QCOMPARE(QSettings().value("language").toString(), QString("ja"));
 
+        // Qt's own strings (standard buttons, context menus) follow too.
+        if (QFile::exists(":/i18n/qtbase_ja.qm")) {
+            QCOMPARE(QCoreApplication::translate("QLineEdit", "&Copy"), QString::fromUtf8("コピー(&C)"));
+            QCOMPARE(QCoreApplication::translate("QPlatformTheme", "Cancel"), QString::fromUtf8("キャンセル"));
+        } else
+            qWarning("qtbase_ja.qm not embedded; skipping the Qt strings check");
+
         language->setCurrentIndex(language->findData("en"));
         QCOMPARE(copy->text(), QString("Copy command"));
+        QCOMPARE(QCoreApplication::translate("QLineEdit", "&Copy"), QString("&Copy"));
         QCOMPARE(QSettings().value("language").toString(), QString("en"));
     }
 

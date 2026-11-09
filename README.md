@@ -20,6 +20,21 @@ The UI is available in **English** and **Japanese (日本語)**. It follows the
 system language on first launch, and you can switch at any time from the
 language selector in the top-right corner. The choice is remembered.
 
+## Download
+
+Get the latest version from the
+[Releases page](https://github.com/Bekind-Labs/kurly/releases):
+
+- **macOS:** open the `.dmg` and drag Kurly to Applications. If macOS says it
+  can't check the app for malicious software, allow it once under
+  **System Settings → Privacy & Security → Open Anyway**.
+- **Windows:** unzip and run `Kurly.exe`. If SmartScreen warns, choose
+  **More info → Run anyway**.
+- **Linux:** make the `.AppImage` executable (`chmod +x Kurly-*.AppImage`) and
+  run it.
+
+See [RELEASING.md](RELEASING.md) for how releases are made.
+
 ## Building
 
 Requirements: CMake ≥ 3.21, a C++17 compiler, Qt 6.2+ with the Widgets and
@@ -136,5 +151,6 @@ and the Windows `kurly.ico`.
 - `src/responseformatter.*` – GUI-independent JSON/XML pretty-printing
 - `src/importdialog.*` – the import dialog
 - `src/mainwindow.*` – the form, command/response panes, running curl, and language switching
+- `packaging/` – scripts that build the release packages
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)

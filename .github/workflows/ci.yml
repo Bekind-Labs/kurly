@@ -28,7 +28,7 @@ jobs:
         if: matrix.system-qt
         run: |
           sudo apt-get update
-          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools curl
+          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools qt6-translations-l10n curl
 
       - name: Install Qt (macOS/Windows)
         if: ${{ !matrix.system-qt }}
@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools curl gcovr
+          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools qt6-translations-l10n curl gcovr
       - name: Build with coverage
         run: |
           cmake -S . -B build -DKURLY_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug

@@ -436,9 +436,13 @@ void MainWindow::retranslateUi()
 void MainWindow::setLanguage(const QString &code)
 {
     qApp->removeTranslator(&m_translator);
-    if (code != QLatin1String("en")
-        && m_translator.load(QStringLiteral(":/i18n/kurly_%1.qm").arg(code))) {
-        qApp->installTranslator(&m_translator);
+    qApp->removeTranslator(&m_qtTranslator);
+    if (code != QLatin1String("en")) {
+        if (m_translator.load(QStringLiteral(":/i18n/kurly_%1.qm").arg(code)))
+            qApp->installTranslator(&m_translator);
+        // Embedded at build time when available (see CMakeLists.txt).
+        if (m_qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1.qm").arg(code)))
+            qApp->installTranslator(&m_qtTranslator);
     }
     QSettings().setValue(QStringLiteral("language"), code);
     // Installing/removing a translator posts LanguageChange to widgets; we
