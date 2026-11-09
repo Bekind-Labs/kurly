@@ -8,8 +8,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
 #if defined(Q_OS_MACOS)
-    // Use the same style as on Linux/Windows, which the layout spacing is
-    // tuned for, instead of the native macOS style.
+    // Use Qt's cross-platform Fusion style, which the layout spacing was
+    // checked against, instead of the native macOS style.
     QApplication::setStyle(QStringLiteral("Fusion"));
 #endif
 
