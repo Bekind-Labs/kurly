@@ -50,6 +50,11 @@ STAGE="$BUILD/dmg"
 rm -rf "$STAGE"
 mkdir -p "$STAGE" "$OUT"
 cp -R "$BUILD/kurly.app" "$STAGE/Kurly.app"
+# License notices travel inside the app (signed with it) and sit in the dmg.
+mkdir -p "$STAGE/Licenses"
+for dest in "$STAGE/Kurly.app/Contents/Resources" "$STAGE/Licenses"; do
+    cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$ROOT"/licenses/*.txt "$dest/"
+done
 if [[ -n "$IDENTITY" ]]; then
     "$QT_DIR/bin/macdeployqt" "$STAGE/Kurly.app" -always-overwrite \
         -codesign="$IDENTITY" -hardened-runtime -timestamp

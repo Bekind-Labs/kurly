@@ -8,5 +8,5 @@ Comment[ja]=curlコマンドを作成・コピー・実行
 Exec=kurly
 Icon=kurly
 Terminal=false
-Categories=Development;Network;Qt;
+Categories=Development;WebDevelopment;Qt;
 Keywords=curl;http;request;api;

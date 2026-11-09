@@ -110,6 +110,8 @@ install(TARGETS kurly
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 if(UNIX AND NOT APPLE)
+    install(FILES LICENSE THIRD_PARTY_NOTICES.md licenses/LGPL-3.0.txt licenses/GPL-3.0.txt
+        DESTINATION ${CMAKE_INSTALL_DOCDIR})
     # Desktop launcher and themed icons for Linux desktops.
     install(FILES icons/kurly.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
     install(FILES icons/kurly.svg

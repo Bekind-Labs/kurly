@@ -154,3 +154,9 @@ and the Windows `kurly.ico`.
 - `packaging/` – scripts that build the release packages
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)
+
+## License
+
+Kurly is released under the [MIT License](LICENSE). The packaged apps also
+include Qt (LGPL-3.0) and other third-party libraries; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -36,7 +36,8 @@ $Stage = Join-Path $BuildDir $Name
 if (Test-Path $Stage) { Remove-Item -Recurse -Force $Stage }
 New-Item -ItemType Directory -Force -Path $Stage, $OutDir | Out-Null
 Copy-Item $Exe "$Stage\Kurly.exe"
-Copy-Item "$Root\README.md" $Stage
+Copy-Item "$Root\README.md", "$Root\LICENSE", "$Root\THIRD_PARTY_NOTICES.md" $Stage
+Copy-Item -Recurse "$Root\licenses" "$Stage\licenses"
 
 # Kurly's and Qt's Japanese translations are embedded in the exe already.
 $WinDeployQt = (Get-Command windeployqt -ErrorAction Stop).Source

@@ -41,6 +41,10 @@ APPDIR="$BUILD/AppDir"
 rm -rf "$APPDIR"
 DESTDIR="$APPDIR" cmake --install "$BUILD"
 
+# appimagetool wants a PNG named after the .desktop Icon= at the top level
+# (it becomes .DirIcon, the icon file managers show for the AppImage).
+cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/kurly.png" "$APPDIR/kurly.png"
+
 echo "==> Fetching linuxdeploy"
 TOOLS="$BUILD/tools"
 mkdir -p "$TOOLS"
@@ -57,7 +61,9 @@ mkdir -p "$OUT"
 export APPIMAGE_EXTRACT_AND_RUN=1 # works without FUSE (e.g. in CI containers)
 export PATH="$TOOLS:$PATH"        # lets linuxdeploy find the Qt plugin
 export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
-(cd "$OUT" && "$LINUXDEPLOY" --appdir "$APPDIR" --plugin qt --output appimage)
+(cd "$OUT" && "$LINUXDEPLOY" --appdir "$APPDIR" \
+    --desktop-file "$APPDIR/usr/share/applications/kurly.desktop" \
+    --plugin qt --output appimage)
 
 APPIMAGE="$OUT/Kurly-$VERSION-$ARCH.AppImage"
 if [[ ! -f "$APPIMAGE" ]]; then
