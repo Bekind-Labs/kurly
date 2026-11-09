@@ -31,9 +31,29 @@ Get the latest version from the
 - **Windows:** unzip and run `Kurly.exe`. If SmartScreen warns, choose
   **More info → Run anyway**.
 - **Linux:** make the `.AppImage` executable (`chmod +x Kurly-*.AppImage`) and
-  run it.
+  run it. On Arch Linux you can also install it as a package; see below.
 
 See [RELEASING.md](RELEASING.md) for how releases are made.
+
+### Arch Linux
+
+Kurly isn't on the AUR yet. Until it is, build and install the package from
+the PKGBUILD in this repository; it builds the current release, runs the tests,
+and installs Kurly through pacman with its launcher entry and icons:
+
+```bash
+git clone https://github.com/Bekind-Labs/kurly.git
+```
+
+```bash
+cd kurly/packaging/arch && makepkg -si
+```
+
+To update, pull the repository and run `makepkg -si` again. To uninstall:
+
+```bash
+sudo pacman -R kurly
+```
 
 ## Building
 
