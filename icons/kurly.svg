@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7B61FF"/>
+      <stop offset="1" stop-color="#14B8C8"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+    <filter id="glyphShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1B1050" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Tile, sized for the macOS icon grid (824px body on a 1024 canvas). -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#shadow)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#shine)"/>
+
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" filter="url(#glyphShadow)">
+    <!-- { -->
+    <path stroke-width="62" d="M420 270 C350 270 340 300 340 360 L340 450 C340 492 322 512 282 512
+                               C322 512 340 532 340 574 L340 664 C340 724 350 754 420 754"/>
+    <!-- } -->
+    <path stroke-width="62" d="M604 270 C674 270 684 300 684 360 L684 450 C684 492 702 512 742 512
+                               C702 512 684 532 684 574 L684 664 C684 724 674 754 604 754"/>
+    <!-- prompt chevron -->
+    <path stroke-width="54" d="M462 444 L526 512 L462 580"/>
+  </g>
+  <!-- cursor -->
+  <rect x="540" y="556" width="72" height="28" rx="14" fill="#FFE066" filter="url(#glyphShadow)"/>
+</svg>

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Distro Qt: also checks the oldest Qt version we support well.
+          - name: Linux (Ubuntu 24.04, system Qt 6.4)
+            os: ubuntu-24.04
+            system-qt: true
+          - name: macOS (Qt 6.8)
+            os: macos-14
+          - name: Windows (MSVC, Qt 6.8)
+            os: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt (Linux)
+        if: matrix.system-qt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools qt6-translations-l10n curl
+
+      - name: Install Qt (macOS/Windows)
+        if: ${{ !matrix.system-qt }}
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          cache: true
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+  coverage:
+    name: Coverage (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools qt6-translations-l10n curl gcovr
+      - name: Build with coverage
+        run: |
+          cmake -S . -B build -DKURLY_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Report
+        run: |
+          gcovr -r . build --filter src/ --exclude src/main.cpp --txt | tee coverage.txt
+          { echo '```'; cat coverage.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
