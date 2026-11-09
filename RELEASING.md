@@ -18,8 +18,9 @@ that new (glibc 2.35+).
 
 ## Making a release
 
-1. Update `project(kurly VERSION x.y.z)` in `CMakeLists.txt`, commit, and merge
-   to `main`.
+1. Update `project(kurly VERSION x.y.z)` in `CMakeLists.txt` and `pkgver` in
+   `packaging/arch/PKGBUILD` (resetting `pkgrel` to 1), commit, and merge to
+   `main`.
 2. Tag the commit and push the tag:
 
    ```bash
@@ -31,6 +32,9 @@ that new (glibc 2.35+).
    the version in `CMakeLists.txt`, or the workflow stops.
 4. Review the draft on GitHub (edit the generated notes if you like) and
    publish it.
+5. Update the PKGBUILD's checksum for the new source tarball: on Arch, run
+   `updpkgsums` in `packaging/arch` and commit the result (and, once Kurly is
+   on the AUR, push the PKGBUILD and a regenerated `.SRCINFO` there too).
 
 The workflow also runs, without releasing anything, when packaging files
 change or when started by hand from the Actions tab. Its packages are then
