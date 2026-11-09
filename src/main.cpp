@@ -2,15 +2,15 @@
 
 #include <QApplication>
 #include <QIcon>
-#include <QStyleFactory>
-#include <QDebug>
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
 #if defined(Q_OS_MACOS)
-    app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
+    // Use the same style as on Linux/Windows, which the layout spacing is
+    // tuned for, instead of the native macOS style.
+    QApplication::setStyle(QStringLiteral("Fusion"));
 #endif
 
     QApplication::setApplicationName(QStringLiteral("Kurly"));
