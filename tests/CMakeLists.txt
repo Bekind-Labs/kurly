@@ -1,3 +1,6 @@
+# Qt Network provides the local HTTP server the run tests talk to.
+find_package(Qt6 REQUIRED COMPONENTS Network)
+
 # Each test is a standalone QtTest executable registered with CTest.
 function(kurly_add_test name)
     cmake_parse_arguments(ARG "GUI" "" "LIBS" ${ARGN})
@@ -13,9 +16,11 @@ endfunction()
 kurly_add_test(tst_curlcommand LIBS kurly_core)
 kurly_add_test(tst_curlparser LIBS kurly_core)
 kurly_add_test(tst_responseformatter LIBS kurly_core)
+kurly_add_test(tst_requeststore LIBS kurly_core)
+kurly_add_test(tst_requestrunner LIBS kurly_core Qt6::Network)
 kurly_add_test(tst_importdialog GUI LIBS kurly_gui)
-find_package(Qt6 REQUIRED COMPONENTS Network)
 kurly_add_test(tst_mainwindow GUI LIBS kurly_gui Qt6::Network)
+kurly_add_test(tst_library GUI LIBS kurly_gui Qt6::Network)
 
 # Checks the shipped Japanese translation for completeness and consistency.
 kurly_add_test(tst_translations LIBS Qt6::Core)

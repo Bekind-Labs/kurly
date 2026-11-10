@@ -17,88 +17,22 @@
 #include <QTableWidget>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QTemporaryDir>
 
 #include "curlcommand.h"
 #include "importdialog.h"
 #include "mainwindow.h"
 
-// A tiny HTTP server for exercising Run without the internet.
-class TestServer : public QTcpServer
-{
-    Q_OBJECT
-public:
-    enum class Mode { Echo, Hang, NotFound, Big, Json };
-    static constexpr const char *kJson = "{\"zebra\":1,\"apple\":[true,null],\"name\":\"テスト\"}";
-    static constexpr const char *kJsonPretty =
-        "{\n  \"zebra\": 1,\n  \"apple\": [\n    true,\n    null\n  ],\n  \"name\": \"テスト\"\n}\n";
-    Mode mode = Mode::Echo;
-    static constexpr int kBigSize = 3 * 1024 * 1024;
+#include "testserver.h"
 
-    TestServer()
-    {
-        connect(this, &QTcpServer::newConnection, this, [this] {
-            while (QTcpSocket *s = nextPendingConnection()) {
-                connect(s, &QTcpSocket::disconnected, s, &QObject::deleteLater);
-                connect(s, &QTcpSocket::readyRead, this, [this, s] { handle(s); });
-            }
-        });
-    }
-
-    QString url(const QString &path = QStringLiteral("/echo")) const
-    {
-        return QStringLiteral("http://127.0.0.1:%1%2").arg(serverPort()).arg(path);
-    }
-
-private:
-    QHash<QTcpSocket *, QByteArray> m_buffers;
-
-    void handle(QTcpSocket *s)
-    {
-        QByteArray &buf = m_buffers[s];
-        buf += s->readAll();
-        const int end = buf.indexOf("\r\n\r\n");
-        if (end < 0)
-            return;
-        const QByteArray head = buf.left(end);
-        int length = 0;
-        for (const QByteArray &line : head.split('\n'))
-            if (line.toLower().startsWith("content-length:"))
-                length = line.mid(15).trimmed().toInt();
-        if (buf.size() < end + 4 + length)
-            return;
-        const QByteArray body = buf.mid(end + 4, length);
-        m_buffers.remove(s);
-
-        QByteArray status = "200 OK", payload;
-        switch (mode) {
-        case Mode::Hang:
-            return; // never answer
-        case Mode::NotFound:
-            status = "404 Not Found";
-            payload = "nope";
-            break;
-        case Mode::Big:
-            payload = QByteArray(kBigSize, 'x'); // one huge line, like minified JSON
-            break;
-        case Mode::Json:
-            payload = kJson;
-            break;
-        case Mode::Echo:
-            payload = "request:\n" + head + "\nbody=" + body + "\n";
-            break;
-        }
-        s->write("HTTP/1.1 " + status + "\r\nContent-Type: text/plain; charset=utf-8\r\n"
-                 "Content-Length: " + QByteArray::number(payload.size())
-                 + "\r\nConnection: close\r\n\r\n" + payload);
-        s->disconnectFromHost();
-    }
-};
 
 class TestMainWindow : public QObject
 {
     Q_OBJECT
 
     MainWindow *w = nullptr;
+    QTemporaryDir m_dir; // each test gets a fresh, private request library
+    QString libraryPath() const { return m_dir.filePath("library.json"); }
 
     template<typename T>
     T *find(const char *name) const
@@ -132,6 +66,7 @@ private slots:
         // Keep tests away from the user's real settings.
         QCoreApplication::setOrganizationName("Bekind Labs Tests");
         QCoreApplication::setApplicationName("tst_mainwindow");
+        QStandardPaths::setTestModeEnabled(true); // never touch the real library
         // Make sure curl talks to the local test server directly.
         for (const char *var : {"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY",
                                 "all_proxy", "ALL_PROXY"})
@@ -143,8 +78,9 @@ private slots:
     void init()
     {
         QSettings().clear();
+        QFile::remove(libraryPath());
         QSettings().setValue("language", "en");
-        w = new MainWindow;
+        w = new MainWindow(nullptr, libraryPath());
         w->show();
         QVERIFY(QTest::qWaitForWindowExposed(w));
     }
@@ -341,7 +277,7 @@ private slots:
     void rememberedLanguage()
     {
         QSettings().setValue("language", "ja");
-        MainWindow second;
+        MainWindow second(nullptr, m_dir.filePath("second.json"));
         QCOMPARE(second.findChild<QComboBox *>("language")->currentData().toString(), QString("ja"));
         QCOMPARE(second.findChild<QPushButton *>("copy")->text(), QString::fromUtf8("コマンドをコピー"));
     }
@@ -349,7 +285,7 @@ private slots:
     void systemLanguageByDefault()
     {
         QSettings().remove("language");
-        MainWindow second;
+        MainWindow second(nullptr, m_dir.filePath("second.json"));
         // QLocale::system() can't be faked portably, so check that a
         // supported language matching it was picked and remembered.
         const QString expected = QLocale::system().language() == QLocale::Japanese ? "ja" : "en";
@@ -635,7 +571,7 @@ private slots:
     void prettySettingIsRemembered()
     {
         QSettings().setValue("prettyPrint", false);
-        MainWindow second;
+        MainWindow second(nullptr, m_dir.filePath("second.json"));
         QVERIFY(!second.findChild<QCheckBox *>("pretty")->isChecked());
     }
 

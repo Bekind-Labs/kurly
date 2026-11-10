@@ -23,6 +23,8 @@ add_library(kurly_core STATIC
     src/curlcommand.cpp src/curlcommand.h
     src/curlparser.cpp src/curlparser.h
     src/responseformatter.cpp src/responseformatter.h
+    src/requeststore.cpp src/requeststore.h
+    src/requestrunner.cpp src/requestrunner.h
 )
 target_include_directories(kurly_core PUBLIC src)
 target_link_libraries(kurly_core PUBLIC Qt6::Core)
@@ -31,6 +33,7 @@ target_link_libraries(kurly_core PUBLIC Qt6::Core)
 add_library(kurly_gui STATIC
     src/mainwindow.cpp src/mainwindow.h
     src/importdialog.cpp src/importdialog.h
+    src/librarypanel.cpp src/librarypanel.h
     src/spacing.h
 )
 target_link_libraries(kurly_gui PUBLIC kurly_core Qt6::Widgets)

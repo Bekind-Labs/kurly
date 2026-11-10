@@ -3,6 +3,9 @@
 #include "curlcommand.h"
 #include "curlparser.h"
 #include "importdialog.h"
+#include "librarypanel.h"
+#include "requestrunner.h"
+#include "requeststore.h"
 #include "responseformatter.h"
 #include "spacing.h"
 
@@ -65,9 +68,12 @@ void setTextWrappingSensibly(QPlainTextEdit *edit, const QString &text)
 
 } // namespace
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget *parent, const QString &libraryPath)
     : QMainWindow(parent)
 {
+    m_store = new RequestStore(libraryPath.isEmpty() ? RequestStore::defaultPath() : libraryPath, this);
+    const auto loadResult = m_store->load();
+
     buildUi();
 
     // Saved choice wins; otherwise follow the system language.
@@ -84,15 +90,56 @@ MainWindow::MainWindow(QWidget *parent)
     // the form scrolls vertically, so only a minimum height is needed.
     setMinimumHeight(20 * Spacing::gridUnit);
     resize(62 * Spacing::gridUnit, 44 * Spacing::gridUnit);
+
+    // Show the request the user was last working on.
+    connect(m_store, &RequestStore::currentChanged, this, &MainWindow::showRequest);
+    connect(m_store, &RequestStore::listChanged, this, &MainWindow::pruneRunners);
+    connect(m_store, &RequestStore::saveFailed, this, [this](const QString &error) {
+        if (m_saveFailureShown)
+            return; // once per session is enough
+        m_saveFailureShown = true;
+        QMessageBox::warning(this, tr("Couldn't Save Library"),
+                             tr("Your requests couldn't be saved to %1:\n%2")
+                                 .arg(QDir::toNativeSeparators(m_store->filePath()), error));
+    });
+    showRequest(m_store->currentId());
+    setLibraryVisible(QSettings().value(QStringLiteral("libraryVisible"), false).toBool());
+
+    if (loadResult != RequestStore::LoadResult::Loaded && loadResult != RequestStore::LoadResult::New)
+        QTimer::singleShot(0, this, [this, loadResult] { reportLibraryProblem(int(loadResult)); });
 }
 
 MainWindow::~MainWindow()
 {
-    // Don't let the process report back into a half-destroyed window.
-    if (m_process) {
-        m_process->disconnect(this);
-        m_process->kill();
-        m_process->waitForFinished(1000);
+    // Stop any running curl before the window is torn down.
+    qDeleteAll(m_runners);
+    m_runners.clear();
+    m_store->flush();
+}
+
+void MainWindow::reportLibraryProblem(int loadResult)
+{
+    const QString path = QDir::toNativeSeparators(m_store->filePath());
+    switch (RequestStore::LoadResult(loadResult)) {
+    case RequestStore::LoadResult::Corrupt:
+        QMessageBox::warning(this, tr("Library Was Damaged"),
+                             tr("Your saved requests couldn't be read, so Kurly started a new "
+                                "library. The damaged file was kept as:\n%1")
+                                 .arg(QDir::toNativeSeparators(m_store->backupPath())));
+        break;
+    case RequestStore::LoadResult::NewerVersion:
+        QMessageBox::warning(this, tr("Library From a Newer Version"),
+                             tr("Your library was saved by a newer version of Kurly. You can "
+                                "use it, but changes won't be saved until you update Kurly.\n%1")
+                                 .arg(path));
+        break;
+    case RequestStore::LoadResult::Inaccessible:
+        QMessageBox::warning(this, tr("Library Can't Be Opened"),
+                             tr("Kurly doesn't have permission to read your library, so changes "
+                                "won't be saved:\n%1").arg(path));
+        break;
+    default:
+        break;
     }
 }
 
@@ -106,6 +153,11 @@ void MainWindow::buildUi()
     formLayout->setSpacing(Spacing::large); // between groups
 
     auto *importRow = new QHBoxLayout;
+    importRow->setSpacing(Spacing::medium);
+    m_libraryToggle = new QPushButton;
+    m_libraryToggle->setCheckable(true);
+    m_libraryToggle->setIcon(QIcon::fromTheme(QStringLiteral("view-list-details")));
+    importRow->addWidget(m_libraryToggle);
     m_import = new QPushButton;
     m_import->setIcon(QIcon::fromTheme(QStringLiteral("edit-paste")));
     importRow->addWidget(m_import);
@@ -297,11 +349,17 @@ void MainWindow::buildUi()
     formScroll->viewport()->setAutoFillBackground(false);
     form->setAutoFillBackground(false);
 
+    m_library = new LibraryPanel(m_store);
+    m_library->setObjectName(QStringLiteral("libraryPanel"));
+
     auto *split = new QSplitter;
+    split->addWidget(m_library);
     split->addWidget(formScroll);
     split->addWidget(right);
-    split->setStretchFactor(0, 1);
+    split->setStretchFactor(0, 0);
     split->setStretchFactor(1, 1);
+    split->setStretchFactor(2, 1);
+    split->setSizes({14 * Spacing::gridUnit, 30 * Spacing::gridUnit, 30 * Spacing::gridUnit});
     split->setChildrenCollapsible(false);
     split->setHandleWidth(Spacing::large); // gap between the two columns
 
@@ -340,6 +398,7 @@ void MainWindow::buildUi()
     m_status->setObjectName(QStringLiteral("status"));
     m_language->setObjectName(QStringLiteral("language"));
     m_import->setObjectName(QStringLiteral("import"));
+    m_libraryToggle->setObjectName(QStringLiteral("libraryToggle"));
 
     // ---- Wiring ---------------------------------------------------------
     for (auto *e : {m_url, m_user, m_agent, m_output})
@@ -351,6 +410,13 @@ void MainWindow::buildUi()
     for (auto *c : {m_follow, m_insecure, m_verbose, m_silent, m_include, m_fail,
                     m_compressed, m_longOpts, m_multiline})
         connect(c, &QCheckBox::toggled, this, &MainWindow::updateCommand);
+    // How the command is displayed is a window preference, not part of a request.
+    m_longOpts->setChecked(QSettings().value(QStringLiteral("longOptions"), false).toBool());
+    m_multiline->setChecked(QSettings().value(QStringLiteral("multiline"), false).toBool());
+    connect(m_longOpts, &QCheckBox::toggled, this,
+            [](bool on) { QSettings().setValue(QStringLiteral("longOptions"), on); });
+    connect(m_multiline, &QCheckBox::toggled, this,
+            [](bool on) { QSettings().setValue(QStringLiteral("multiline"), on); });
 
     connect(m_addHeader, &QPushButton::clicked, this, [this] { addHeaderRow(); });
     connect(m_removeHeader, &QPushButton::clicked, this, &MainWindow::removeSelectedHeaders);
@@ -359,10 +425,17 @@ void MainWindow::buildUi()
     connect(m_import, &QPushButton::clicked, this, &MainWindow::importCommand);
     auto *importShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I), this);
     connect(importShortcut, &QShortcut::activated, this, &MainWindow::importCommand);
+    connect(m_libraryToggle, &QPushButton::toggled, this, &MainWindow::setLibraryVisible);
+    auto *libraryShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_B), this);
+    connect(libraryShortcut, &QShortcut::activated, this,
+            [this] { setLibraryVisible(!m_library->isVisible()); });
+    auto *newShortcut = new QShortcut(QKeySequence::New, this);
+    connect(newShortcut, &QShortcut::activated, this, &MainWindow::newRequest);
     // Ctrl+Enter (Cmd+Return on macOS) runs from anywhere, even inside the body editor.
     auto *runShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this);
     connect(runShortcut, &QShortcut::activated, this, [this] {
-        if (m_run->isEnabled() && m_runState != RunState::Running)
+        RequestRunner *r = currentRunner();
+        if (m_run->isEnabled() && !(r && r->isRunning()))
             runOrStop();
     });
     connect(m_language, &QComboBox::currentIndexChanged, this, [this] {
@@ -378,6 +451,10 @@ void MainWindow::retranslateUi()
     setWindowTitle(tr("Kurly – curl command builder"));
 
     m_import->setText(tr("Import curl command…"));
+    m_libraryToggle->setText(tr("Library"));
+    m_libraryToggle->setToolTip(tr("Show or hide your saved requests (%1)")
+                                    .arg(QKeySequence(Qt::CTRL | Qt::Key_B)
+                                             .toString(QKeySequence::NativeText)));
     m_import->setToolTip(tr("Fill in the form from an existing curl command, such as one "
                             "copied from a browser's developer tools (%1)")
                              .arg(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I)
@@ -516,6 +593,8 @@ void MainWindow::updateCommand()
     const QString cmd = CurlCommand::build(currentOptions());
     if (cmd != m_result->toPlainText())
         setTextWrappingSensibly(m_result, cmd);
+    if (!m_loading && !m_shownId.isEmpty())
+        m_store->setOptions(m_shownId, currentOptions());
     m_copy->setEnabled(!cmd.isEmpty());
     updateRunState();
 }
@@ -531,91 +610,76 @@ void MainWindow::copyCommand()
 
 void MainWindow::runOrStop()
 {
-    if (m_process) {
-        m_stopRequested = true;
-        m_process->kill();
-        return;
+    RequestRunner *r = runnerFor(m_shownId, true);
+    if (r->isRunning())
+        r->stop();
+    else
+        r->start(CurlCommand::arguments(currentOptions()));
+}
+
+void MainWindow::setCurlProgram(const QString &program)
+{
+    m_curlProgram = program;
+    for (RequestRunner *r : std::as_const(m_runners))
+        r->setProgram(program);
+}
+
+RequestRunner *MainWindow::runnerFor(const QString &id, bool create)
+{
+    if (RequestRunner *r = m_runners.value(id); r || !create)
+        return r;
+    auto *r = new RequestRunner(this);
+    r->setProgram(m_curlProgram);
+    // Only the selected request's runner updates the view; the others keep
+    // collecting output in the background.
+    connect(r, &RequestRunner::outputChanged, this, [this, r] {
+        // Redraw at most every 100ms rather than per chunk: re-laying out a
+        // long line for every chunk gets quadratically slow.
+        if (r == currentRunner() && !m_renderTimer->isActive())
+            m_renderTimer->start();
+    });
+    connect(r, &RequestRunner::stateChanged, this, [this, r] {
+        if (r == currentRunner()) {
+            updateRunState();
+            renderResponse();
+        }
+    });
+    m_runners.insert(id, r);
+    return r;
+}
+
+void MainWindow::pruneRunners()
+{
+    // Drop the runners (and stop the curl) of deleted requests.
+    for (auto it = m_runners.begin(); it != m_runners.end();) {
+        if (!m_store->find(it.key())) {
+            delete it.value();
+            it = m_runners.erase(it);
+        } else {
+            ++it;
+        }
     }
-
-    QStringList args = CurlCommand::arguments(currentOptions());
-    if (args.isEmpty())
-        return;
-    // Without a terminal, curl prints a progress table to stderr, which would
-    // clutter the output pane. This flag hides it but still shows errors.
-    args.prepend(QStringLiteral("--no-progress-meter"));
-
-    m_rawOutput.clear();
-    m_stdout.clear();
-    m_stderr.clear();
-    m_truncated = false;
-    m_stopRequested = false;
-    m_outDecoder.resetState();
-    m_errDecoder.resetState();
-    renderResponse();
-
-    m_process = new QProcess(this);
-    // GUI apps often start in "/"; use somewhere writable for --output.
-    m_process->setWorkingDirectory(QDir::homePath());
-    connect(m_process, &QProcess::readyReadStandardOutput, this, &MainWindow::readStdout);
-    connect(m_process, &QProcess::readyReadStandardError, this, &MainWindow::readStderr);
-    connect(m_process, &QProcess::finished, this, &MainWindow::processFinished);
-    connect(m_process, &QProcess::errorOccurred, this, &MainWindow::processError);
-
-    m_runState = RunState::Running;
-    m_elapsed.start();
-    updateRunState();
-    m_process->start(m_curlProgram, args, QIODevice::ReadOnly);
-}
-
-void MainWindow::readStdout()
-{
-    if (m_process)
-        appendOutput(m_outDecoder.decode(m_process->readAllStandardOutput()), true);
-}
-
-void MainWindow::readStderr()
-{
-    if (m_process)
-        appendOutput(m_errDecoder.decode(m_process->readAllStandardError()), false);
-}
-
-void MainWindow::appendOutput(const QString &text, bool isStdout)
-{
-    // Keep memory and the UI in check if someone downloads something large.
-    constexpr qsizetype kMaxChars = 2 * 1024 * 1024;
-    if (m_truncated || text.isEmpty())
-        return;
-    QString chunk = text;
-    if (m_rawOutput.size() + chunk.size() > kMaxChars) {
-        chunk.truncate(kMaxChars - m_rawOutput.size());
-        m_truncated = true;
-    }
-    m_rawOutput += chunk;
-    (isStdout ? m_stdout : m_stderr) += chunk;
-    // Redraw at most every 100ms rather than per chunk: re-laying out a
-    // long line for every chunk gets quadratically slow.
-    if (!m_renderTimer->isActive())
-        m_renderTimer->start();
 }
 
 void MainWindow::renderResponse()
 {
     m_renderTimer->stop();
-    QString text = m_rawOutput;
+    const RequestRunner *r = currentRunner();
+    QString text = r ? r->output() : QString();
     // Format once curl is done, if the whole response arrived.
-    const bool done = m_runState != RunState::Running;
+    const bool done = !r || !r->isRunning();
     m_pretty->setEnabled(false);
-    if (done && !m_truncated && !m_stdout.isEmpty()) {
-        const auto formatted = ResponseFormatter::format(m_stdout);
+    if (r && done && !r->isTruncated() && !r->standardOutput().isEmpty()) {
+        const auto formatted = ResponseFormatter::format(r->standardOutput());
         if (formatted.kind != ResponseFormatter::Kind::None) {
             m_pretty->setEnabled(true);
             if (m_pretty->isChecked()) {
                 // curl's own messages (errors, -v output) come first.
-                text = m_stderr + formatted.text;
+                text = r->standardError() + formatted.text;
             }
         }
     }
-    if (m_truncated)
+    if (r && r->isTruncated())
         text += QLatin1Char('\n') + tr("[Output truncated]") + QLatin1Char('\n');
 
     if (text == m_response->toPlainText())
@@ -625,29 +689,6 @@ void MainWindow::renderResponse()
     setTextWrappingSensibly(m_response, text);
     if (follow)
         bar->setValue(bar->maximum());
-}
-
-void MainWindow::processFinished(int exitCode, QProcess::ExitStatus status)
-{
-    readStdout();
-    readStderr();
-    m_elapsedMs = m_elapsed.elapsed();
-    m_exitCode = exitCode;
-    m_runState = status == QProcess::NormalExit ? RunState::Finished : RunState::Crashed;
-    m_process->deleteLater();
-    m_process = nullptr;
-    updateRunState();
-    renderResponse();
-}
-
-void MainWindow::processError(QProcess::ProcessError error)
-{
-    if (error != QProcess::FailedToStart || !m_process)
-        return; // crashes/kills are reported through finished()
-    m_runState = RunState::NotFound;
-    m_process->deleteLater();
-    m_process = nullptr;
-    updateRunState();
 }
 
 QString MainWindow::exitCodeHint(int code) const
@@ -671,37 +712,39 @@ void MainWindow::updateRunState()
     if (!m_run || !m_status)
         return;
 
-    const bool running = m_runState == RunState::Running;
+    const RequestRunner *r = currentRunner();
+    const auto state = r ? r->state() : RequestRunner::State::Idle;
+    const bool running = state == RequestRunner::State::Running;
     m_run->setText(running ? tr("Stop") : tr("Run"));
     m_run->setEnabled(running || !m_result->toPlainText().isEmpty());
 
     QString text;
     QString color;
-    switch (m_runState) {
-    case RunState::Idle:
+    switch (state) {
+    case RequestRunner::State::Idle:
         break;
-    case RunState::Running:
+    case RequestRunner::State::Running:
         text = tr("Running…");
         break;
-    case RunState::Finished: {
-        const QString time = tr("%1 ms").arg(m_elapsedMs);
-        if (m_exitCode == 0) {
+    case RequestRunner::State::Finished: {
+        const QString time = tr("%1 ms").arg(r->elapsedMs());
+        if (r->exitCode() == 0) {
             text = tr("Done · %1").arg(time);
             color = QStringLiteral("#2e7d32");
         } else {
-            const QString hint = exitCodeHint(m_exitCode);
-            text = hint.isEmpty() ? tr("curl exited with code %1 · %2").arg(m_exitCode).arg(time)
+            const QString hint = exitCodeHint(r->exitCode());
+            text = hint.isEmpty() ? tr("curl exited with code %1 · %2").arg(r->exitCode()).arg(time)
                                   : tr("curl exited with code %1 (%2) · %3")
-                                        .arg(m_exitCode).arg(hint, time);
+                                        .arg(r->exitCode()).arg(hint, time);
             color = QStringLiteral("#c62828");
         }
         break;
     }
-    case RunState::Crashed:
-        text = m_stopRequested ? tr("Stopped") : tr("curl stopped unexpectedly");
-        color = m_stopRequested ? QString() : QStringLiteral("#c62828");
+    case RequestRunner::State::Crashed:
+        text = r->stopRequested() ? tr("Stopped") : tr("curl stopped unexpectedly");
+        color = r->stopRequested() ? QString() : QStringLiteral("#c62828");
         break;
-    case RunState::NotFound:
+    case RequestRunner::State::NotFound:
         text = tr("Could not start curl. Is it installed and on your PATH?");
         color = QStringLiteral("#c62828");
         break;
@@ -719,7 +762,15 @@ void MainWindow::importCommand()
     if (dialog.exec() != QDialog::Accepted)
         return;
     const auto &result = dialog.result();
-    loadOptions(result.options);
+    // With the library open, keep the current request and import into a new
+    // one, unless the current one is still empty. With it hidden, Kurly
+    // works on a single request, which the import replaces.
+    if (m_library->isVisible() && !m_url->text().trimmed().isEmpty()) {
+        const QString id = m_store->add(result.options, {}, m_shownId);
+        m_store->setCurrentId(id);
+    } else {
+        loadOptions(result.options);
+    }
 
     if (!result.ignored.isEmpty()) {
         QMessageBox box(QMessageBox::Information, tr("Import curl Command"),
@@ -774,4 +825,36 @@ void MainWindow::loadOptions(const CurlOptions &o)
         addHeaderRow(); // also refreshes the command
     else
         updateCommand();
+}
+
+// ---- The library -----------------------------------------------------------------
+
+void MainWindow::showRequest(const QString &id)
+{
+    const SavedRequest *r = m_store->find(id);
+    if (!r)
+        return;
+    m_shownId = id;
+    m_loading = true;
+    loadOptions(r->options);
+    m_loading = false;
+    updateRunState();
+    renderResponse();
+}
+
+void MainWindow::setLibraryVisible(bool visible)
+{
+    m_library->setVisible(visible);
+    {
+        const QSignalBlocker block(m_libraryToggle);
+        m_libraryToggle->setChecked(visible);
+    }
+    QSettings().setValue(QStringLiteral("libraryVisible"), visible);
+}
+
+void MainWindow::newRequest()
+{
+    setLibraryVisible(true); // a second request only makes sense with the list showing
+    m_library->newRequest();
+    m_url->setFocus();
 }
