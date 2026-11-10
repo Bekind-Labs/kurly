@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{meta_title}}</title>
+  <meta name="description" content="{{meta_description}}">
+  <link rel="canonical" href="{{page_url}}">
+  <link rel="alternate" hreflang="en" href="{{url_en}}">
+  <link rel="alternate" hreflang="ja" href="{{url_ja}}">
+  <link rel="alternate" hreflang="x-default" href="{{url_en}}">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#7b61ff">
+  <link rel="icon" href="{{root}}assets/kurly.svg" type="image/svg+xml">
+  <link rel="icon" href="{{root}}assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="{{root}}assets/kurly-256.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Kurly">
+  <meta property="og:title" content="{{meta_title}}">
+  <meta property="og:description" content="{{meta_description}}">
+  <meta property="og:url" content="{{page_url}}">
+  <meta property="og:image" content="{{site_url}}assets/og-{{lang}}.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="{{og_locale}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="{{root}}style.css">
+  <script type="application/json" id="strings">{{js_strings}}</script>
+  <script src="{{root}}main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">{{skip_to_content}}</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{{root}}{{home_path}}">
+        <img src="{{root}}assets/kurly.svg" alt="" width="32" height="32">
+        <span>Kurly</span>
+      </a>
+      <nav class="site-nav" aria-label="{{nav_label}}">
+        <a href="#features">{{nav_features}}</a>
+        <a href="#download">{{nav_download}}</a>
+        <a href="{{repo_url}}">GitHub</a>
+      </nav>
+      <div class="lang-switch" role="group" aria-label="{{lang_switch_label}}">
+        <a href="{{root}}" hreflang="en" lang="en" data-lang="en" {{en_current}}>English</a>
+        <a href="{{root}}ja/" hreflang="ja" lang="ja" data-lang="ja" {{ja_current}}>日本語</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container hero-inner">
+        <p class="eyebrow">{{hero_eyebrow}}</p>
+        <h1>{{hero_title}}</h1>
+        <p class="lead">{{hero_lead}}</p>
+        <div class="cta-row">
+          <a class="button button-primary" id="hero-download" href="#download">{{hero_download}}</a>
+          <a class="button button-secondary" href="{{repo_url}}">{{hero_github}}</a>
+        </div>
+        <p class="hero-meta" id="hero-meta">{{hero_meta}}</p>
+      </div>
+      <div class="container">
+        <figure class="app-window">
+          <div class="app-window-bar" aria-hidden="true"><span></span><span></span><span></span><b>Kurly</b></div>
+          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440"
+               alt="{{screenshot_alt}}">
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <div class="container">
+        <h2 id="features-title">{{features_title}}</h2>
+        <p class="section-lead">{{features_lead}}</p>
+        <ul class="feature-grid">
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h7"/></svg>
+            <h3>{{feature_build_title}}</h3>
+            <p>{{feature_build_text}}</p>
+          </li>
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+            <h3>{{feature_import_title}}</h3>
+            <p>{{feature_import_text}}</p>
+          </li>
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 18 12 7 20Z"/></svg>
+            <h3>{{feature_run_title}}</h3>
+            <p>{{feature_run_text}}</p>
+          </li>
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h10v11H9zM5 15V4h10"/></svg>
+            <h3>{{feature_copy_title}}</h3>
+            <p>{{feature_copy_text}}</p>
+          </li>
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8M13 21l4-10 4 10M14.5 17h5"/></svg>
+            <h3>{{feature_lang_title}}</h3>
+            <p>{{feature_lang_text}}</p>
+          </li>
+          <li class="feature">
+            <svg class="feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6Z"/></svg>
+            <h3>{{feature_private_title}}</h3>
+            <p>{{feature_private_text}}</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section-alt" aria-labelledby="steps-title">
+      <div class="container steps-layout">
+        <div>
+          <h2 id="steps-title">{{steps_title}}</h2>
+          <ol class="steps">
+            <li>{{step_1}}</li>
+            <li>{{step_2}}</li>
+            <li>{{step_3}}</li>
+          </ol>
+        </div>
+        <figure class="terminal">
+          <figcaption>{{terminal_caption}}</figcaption>
+<pre><code><span class="prompt">curl</span> 'https://api.example.com/v1/users/42' \
+  -H 'accept: application/json' \
+  -H 'authorization: Bearer YOUR_TOKEN' \
+  --compressed</code></pre>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="download" aria-labelledby="download-title">
+      <div class="container">
+        <h2 id="download-title">{{download_title}}</h2>
+        <p class="section-lead" id="download-version">{{download_lead}}</p>
+        <div class="download-grid">
+          <article class="download-card" data-os="mac">
+            <h3>macOS</h3>
+            <p class="download-req" id="mac-req">{{download_mac_req}}</p>
+            <a class="button button-primary" id="download-mac" href="{{repo_url}}/releases/latest">{{download_mac_button}}</a>
+            <p class="download-note">{{download_mac_note}}</p>
+          </article>
+          <article class="download-card" data-os="windows">
+            <h3>Windows</h3>
+            <p class="download-req">{{download_win_req}}</p>
+            <a class="button button-primary" id="download-windows" href="{{repo_url}}/releases/latest">{{download_win_button}}</a>
+            <p class="download-note">{{download_win_note}}</p>
+          </article>
+          <article class="download-card" data-os="linux">
+            <h3>Linux</h3>
+            <p class="download-req">{{download_linux_req}}</p>
+            <a class="button button-primary" id="download-linux" href="{{repo_url}}/releases/latest">{{download_linux_button}}</a>
+            <p class="download-note">{{download_linux_note}}</p>
+          </article>
+        </div>
+        <p class="download-more">
+          <a href="{{repo_url}}/releases">{{download_all}}</a>
+          <a href="{{repo_url}}/releases/latest" id="download-checksums">{{download_checksums}}</a>
+          <a href="{{repo_url}}#building">{{download_source}}</a>
+        </p>
+        <p class="download-curl">{{download_curl_note}}</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>{{footer_license}}</p>
+      <nav aria-label="{{footer_nav_label}}">
+        <a href="{{repo_url}}">GitHub</a>
+        <a href="{{repo_url}}/releases">{{footer_releases}}</a>
+        <a href="{{repo_url}}/issues">{{footer_issues}}</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

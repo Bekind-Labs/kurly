@@ -2,6 +2,8 @@
 
 A Qt-based native desktop app with a friendly UI for building cURL commands.
 
+**Website:** <https://bekind-labs.github.io/kurly/> ([日本語](https://bekind-labs.github.io/kurly/ja/))
+
 Fill in the form on the left (URL, method, headers, body, auth, common
 options) and the matching `curl` command updates live on the right. Click
 **Copy command** to put it on the clipboard, or **Run** (Ctrl/⌘+Return) to
@@ -164,6 +166,29 @@ cmake --build build --target update_translations
 `rsvg-convert` from librsvg) regenerates the PNGs, the macOS `kurly.icns`,
 and the Windows `kurly.ico`.
 
+## Website
+
+The landing page lives in `site/` and is published to GitHub Pages by
+`.github/workflows/pages.yml` whenever it changes on `main`.
+
+- `site/template.html` is the page; all text comes from
+  `site/strings/en.json` and `site/strings/ja.json`. The build fails if the
+  two languages don't have the same strings, or the template uses one that
+  doesn't exist.
+- `site/static/` holds the CSS, JavaScript, screenshots and social preview
+  images. The download buttons fetch the latest release from GitHub, so the
+  site doesn't need changing for new versions.
+
+To build and preview it locally:
+
+```bash
+python3 site/build.py && python3 -m http.server -d site/_site 8000
+```
+
+Then open <http://localhost:8000>. After changing the headline or the
+screenshots, regenerate the social preview images with
+`node site/tools/make-og-images.js` (needs Playwright).
+
 ## Layout
 
 - `src/curlcommand.*` – GUI-independent command builder and shell quoting
@@ -172,6 +197,7 @@ and the Windows `kurly.ico`.
 - `src/importdialog.*` – the import dialog
 - `src/mainwindow.*` – the form, command/response panes, running curl, and language switching
 - `packaging/` – scripts that build the release packages
+- `site/` – the website (see above)
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)
 
