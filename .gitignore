@@ -63,3 +63,5 @@ compile_commands.json
 /packaging/arch/pkg/
 /packaging/arch/*.tar.gz
 /packaging/arch/*.pkg.tar.*
+/site/_site/
+/_site/
