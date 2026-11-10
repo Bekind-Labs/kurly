@@ -199,13 +199,19 @@ and the Windows `kurly.ico`.
 
 ## Website
 
-The landing page lives in `site/` and is published to GitHub Pages by
-`.github/workflows/pages.yml` whenever it changes on `main`.
+The website lives in `site/` and is published to GitHub Pages by
+`.github/workflows/pages.yml` whenever it changes on `main`. It has a landing
+page and a guide, each in English (`/`, `/docs/`) and Japanese (`/ja/`,
+`/ja/docs/`).
 
-- `site/template.html` is the page; all text comes from
-  `site/strings/en.json` and `site/strings/ja.json`. The build fails if the
-  two languages don't have the same strings, or the template uses one that
-  doesn't exist.
+- `site/pages/` holds a template per page, and `site/partials/` the pieces
+  they share (`<head>`, header, footer).
+- Short texts come from `site/strings/en.json` and `site/strings/ja.json`.
+  The guide's text is in `site/content/docs.en.html` and `docs.ja.html`; its
+  table of contents is generated from the headings.
+- The build fails if the two languages' strings differ, a template uses one
+  that doesn't exist, the guides don't have the same sections in the same
+  order, or a link points to a section that doesn't exist.
 - `site/static/` holds the CSS, JavaScript, screenshots and social preview
   images. The download buttons fetch the latest release from GitHub, so the
   site doesn't need changing for new versions.

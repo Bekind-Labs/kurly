@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+{{> head}}
+</head>
+<body>
+{{> header}}
+  <main id="main" class="docs">
+    <div class="container docs-layout">
+      <nav class="toc" aria-label="{{docs_toc_label}}">
+        <details class="toc-details" open>
+          <summary>{{docs_toc_label}}</summary>
+          {{toc}}
+        </details>
+      </nav>
+      <article class="prose">
+        <header class="docs-header">
+          <p class="eyebrow">{{docs_eyebrow}}</p>
+          <h1>{{docs_title}}</h1>
+          <p class="lead">{{docs_lead}}</p>
+        </header>
+{{content}}
+      </article>
+    </div>
+  </main>
+
+{{> footer}}
+</body>
+</html>
