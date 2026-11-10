@@ -148,8 +148,9 @@ void MainWindow::buildUi()
     // ---- Left: the form -------------------------------------------------
     auto *form = new QWidget;
     auto *formLayout = new QVBoxLayout(form);
-    // Leave room between the content and the column divider.
-    formLayout->setContentsMargins(0, 0, Spacing::large, 0);
+    // Each pane pads its own content, so the dividers between panes can run
+    // the full height of the window (as in KDE apps).
+    formLayout->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     formLayout->setSpacing(Spacing::large); // between groups
 
     auto *importRow = new QHBoxLayout;
@@ -256,8 +257,7 @@ void MainWindow::buildUi()
     // ---- Right: command (top) and response (bottom) ----------------------
     auto *commandPane = new QWidget;
     auto *rl = new QVBoxLayout(commandPane);
-    // Room between the content and the dividers to the left and below.
-    rl->setContentsMargins(Spacing::large, 0, 0, Spacing::large);
+    rl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     rl->setSpacing(Spacing::small); // title → content, content → its controls
 
     auto *langRow = new QHBoxLayout;
@@ -299,8 +299,7 @@ void MainWindow::buildUi()
 
     auto *responsePane = new QWidget;
     auto *pl = new QVBoxLayout(responsePane);
-    // Room between the content and the dividers to the left and above.
-    pl->setContentsMargins(Spacing::large, Spacing::large, 0, 0);
+    pl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     pl->setSpacing(Spacing::small);
     auto *statusRow = new QHBoxLayout;
     statusRow->setSpacing(Spacing::large);
@@ -335,7 +334,6 @@ void MainWindow::buildUi()
     right->setStretchFactor(0, 1);
     right->setStretchFactor(1, 2);
     right->setChildrenCollapsible(false);
-    right->setHandleWidth(Spacing::large); // gap between command and response
 
     // The form scrolls instead of squashing its fields when the window is small.
     auto *formScroll = m_formScroll = new QScrollArea;
@@ -361,14 +359,9 @@ void MainWindow::buildUi()
     split->setStretchFactor(2, 1);
     split->setSizes({14 * Spacing::gridUnit, 30 * Spacing::gridUnit, 30 * Spacing::gridUnit});
     split->setChildrenCollapsible(false);
-    split->setHandleWidth(Spacing::large); // gap between the two columns
-
-    // Window edge padding.
-    auto *central = new QWidget;
-    auto *cl = new QVBoxLayout(central);
-    cl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
-    cl->addWidget(split);
-    setCentralWidget(central);
+    // The panes fill the window edge to edge and pad their own content; the
+    // dividers use the style's native width.
+    setCentralWidget(split);
 
     // Stable names for tests and accessibility tooling.
     m_url->setObjectName(QStringLiteral("url"));

@@ -5,6 +5,7 @@
 #include <QClipboard>
 #include <QComboBox>
 #include <QLabel>
+#include <QLayout>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPlainTextEdit>
@@ -13,6 +14,7 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QStandardPaths>
 #include <QTableWidget>
 #include <QTcpServer>
@@ -21,6 +23,7 @@
 
 #include "curlcommand.h"
 #include "importdialog.h"
+#include "librarypanel.h"
 #include "mainwindow.h"
 
 #include "testserver.h"
@@ -576,6 +579,25 @@ private slots:
     }
 
     // ---- Layout ------------------------------------------------------------
+
+    void panesPadTheirOwnContent()
+    {
+        // The dividers run edge to edge (no window margin)...
+        auto *split = qobject_cast<QSplitter *>(w->centralWidget());
+        QVERIFY(split);
+        QCOMPARE(split->orientation(), Qt::Horizontal);
+        auto *right = split->findChild<QSplitter *>();
+        QVERIFY(right);
+        QCOMPARE(right->orientation(), Qt::Vertical);
+        QCOMPARE(right->height(), split->height()); // full height
+        // ...and every pane keeps its content 8px (HIG largeSpacing) from
+        // the window edges and the dividers.
+        const QMargins padding(8, 8, 8, 8);
+        QCOMPARE(w->library()->layout()->contentsMargins(), padding);
+        QCOMPARE(find<QScrollArea>("formScroll")->widget()->layout()->contentsMargins(), padding);
+        QCOMPARE(find<QPlainTextEdit>("command")->parentWidget()->layout()->contentsMargins(), padding);
+        QCOMPARE(find<QPlainTextEdit>("response")->parentWidget()->layout()->contentsMargins(), padding);
+    }
 
     void formScrollsWhenSmall()
     {

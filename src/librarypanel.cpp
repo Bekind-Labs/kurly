@@ -19,8 +19,8 @@ LibraryPanel::LibraryPanel(RequestStore *store, QWidget *parent)
     , m_store(store)
 {
     auto *layout = new QVBoxLayout(this);
-    // Room between the content and the column divider on the right.
-    layout->setContentsMargins(0, 0, Spacing::large, 0);
+    // Pads its own content, like the window's other panes.
+    layout->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     layout->setSpacing(Spacing::small);
 
     m_title = new QLabel;
