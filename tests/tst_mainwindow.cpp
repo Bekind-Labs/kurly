@@ -370,6 +370,7 @@ private slots:
 
         CurlOptions o;
         o.url = server.url();
+        o.method = "POST";
         o.headers = {{"X-Kurly", QString::fromUtf8("テスト")}};
         o.body = QString::fromUtf8("hello 日本語");
         w->loadOptions(o);

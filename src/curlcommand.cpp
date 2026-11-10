@@ -44,10 +44,13 @@ static QList<QStringList> argumentGroups(const CurlOptions &o)
     const QString method = o.method.trimmed().toUpper();
     if (method == QLatin1String("HEAD")) {
         g << QStringList{opt("-I", "--head")};
-    } else if (!method.isEmpty() && method != QLatin1String("GET")
-               && !(method == QLatin1String("POST") && !o.body.isEmpty())) {
-        // curl already switches to POST when a body is supplied.
-        g << QStringList{opt("-X", "--request"), method};
+    } else {
+        // curl sends GET by default, or POST when there's a body. Leave -X
+        // out only when that default is the chosen method, so the command
+        // always sends what the form shows (e.g. GET with a body needs -X GET).
+        const QString implied = o.body.isEmpty() ? QStringLiteral("GET") : QStringLiteral("POST");
+        if (!method.isEmpty() && method != implied)
+            g << QStringList{opt("-X", "--request"), method};
     }
 
     if (o.followRedirects) g << QStringList{opt("-L", "--location")};

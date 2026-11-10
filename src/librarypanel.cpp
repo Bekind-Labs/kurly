@@ -69,7 +69,8 @@ LibraryPanel::LibraryPanel(RequestStore *store, QWidget *parent)
     m_renameAction->setShortcut(Qt::Key_F2);
     m_duplicateAction = new QAction(this);
     m_deleteAction = new QAction(this);
-    m_deleteAction->setShortcut(QKeySequence::Delete);
+    // Mac keyboards label Backspace "delete", so accept both keys.
+    m_deleteAction->setShortcuts({QKeySequence(QKeySequence::Delete), QKeySequence(Qt::Key_Backspace)});
     for (auto *a : {m_renameAction, m_deleteAction}) {
         a->setShortcutContext(Qt::WidgetShortcut);
         m_list->addAction(a);
