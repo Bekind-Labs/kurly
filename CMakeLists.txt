@@ -15,6 +15,7 @@ find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets LinguistTools Test)
 
 option(KURLY_BUILD_TESTS "Build the unit tests" ON)
 option(KURLY_COVERAGE "Instrument kurly_core/kurly_gui for code coverage (GCC/Clang)" OFF)
+option(KURLY_BUILD_SCREENSHOT_TOOL "Build the tool that takes the website's screenshots" OFF)
 option(KURLY_REQUIRE_QT_TRANSLATIONS
        "Fail if Qt's own Japanese translation (qtbase_ja.qm) can't be found" OFF)
 
@@ -23,6 +24,8 @@ add_library(kurly_core STATIC
     src/curlcommand.cpp src/curlcommand.h
     src/curlparser.cpp src/curlparser.h
     src/responseformatter.cpp src/responseformatter.h
+    src/requeststore.cpp src/requeststore.h
+    src/requestrunner.cpp src/requestrunner.h
 )
 target_include_directories(kurly_core PUBLIC src)
 target_link_libraries(kurly_core PUBLIC Qt6::Core)
@@ -31,7 +34,9 @@ target_link_libraries(kurly_core PUBLIC Qt6::Core)
 add_library(kurly_gui STATIC
     src/mainwindow.cpp src/mainwindow.h
     src/importdialog.cpp src/importdialog.h
+    src/librarypanel.cpp src/librarypanel.h
     src/spacing.h
+    src/themecolors.h
 )
 target_link_libraries(kurly_gui PUBLIC kurly_core Qt6::Widgets)
 
@@ -121,6 +126,10 @@ if(UNIX AND NOT APPLE)
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
             RENAME kurly.png)
     endforeach()
+endif()
+
+if(KURLY_BUILD_SCREENSHOT_TOOL)
+    add_subdirectory(tools/screenshots)
 endif()
 
 if(KURLY_BUILD_TESTS)

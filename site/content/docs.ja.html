@@ -1,0 +1,226 @@
+        <h2 id="what-is-kurly">Kurlyでできること</h2>
+        <p>Kurlyは、<strong>curlコマンド</strong>を扱うためのデスクトップアプリです。curlコマンドとは、Web APIを呼び出す方法を1行で表したもので、APIのドキュメント、不具合報告、チャット、ブラウザーの開発者ツールなど、あらゆる場所で目にします。</p>
+        <p>curlは強力ですが、そのコマンドは読みにくく、間違えやすいものです。オプションは何十種類もあり、クォートにも気を使い、行も長くなりがちです。Kurlyはリクエストをひと目でわかるフォームにまとめ、編集に合わせて対応するコマンドを自動で更新します。たとえば次のような場面で使えます。</p>
+        <ul>
+          <li><strong>作る：</strong>curlのオプションを覚えていなくてもコマンドを作成し、ターミナルやスクリプト、ドキュメントにコピーできます。</li>
+          <li><strong>読み解く：</strong>受け取ったコマンドをインポートすれば、URL・ヘッダー・ボディがフォームに整理されて表示されます。</li>
+          <li><strong>試す：</strong>リクエストを実行してレスポンスを確認できます。JSONやXMLは見やすくインデントされます。</li>
+          <li><strong>残す：</strong>よく使うリクエストをライブラリに保存しておけば、次回もすぐに呼び出せます。</li>
+        </ul>
+        <p>KurlyはmacOS・Windows・Linuxで動作し、日本語と英語に対応した、無料のオープンソースソフトウェアです。</p>
+
+        <h2 id="what-is-curl">curlとは</h2>
+        <p><a href="https://curl.se/">curl</a>は、サーバーにリクエストを送り、返ってきた内容を表示する無料のコマンドラインプログラムです。1998年から開発が続いており、多くのプロトコル（主にWebで使われるHTTPとHTTPS）に対応しています。macOS、Windows 10以降、そしてほとんどのLinuxに標準で入っているため、「APIの呼び出し方を正確に示す方法」として、curlコマンドが事実上の標準になっています。</p>
+        <p>Kurlyはcurlの代わりではありません。リクエストの実行にはパソコンに入っているcurlを使い、表示されるコマンドも、どこでも実行できる本物のcurlコマンドです。</p>
+
+        <h3 id="requests">リクエストとレスポンス</h3>
+        <p>Web APIとのやりとりは、<em>リクエスト</em>と<em>レスポンス</em>の会話です。リクエストで「何をしたいか」を伝え、サーバーはレスポンスで「どうなったか」を返します。</p>
+        <p><strong>リクエスト</strong>は次の要素からなります。</p>
+        <ul>
+          <li><strong>URL：</strong>送り先です。たとえば<code>https://api.example.com/v1/users/42</code>。<code>?</code>より後ろは<em>クエリ文字列</em>と呼ばれ、<code>?page=2</code>のような追加のパラメーターを表します。</li>
+          <li><strong>メソッド：</strong>何をするか（下の表を参照）。</li>
+          <li><strong>ヘッダー：</strong><code>名前: 値</code>の形の追加情報です。受け取りたい形式（<code>Accept: application/json</code>）や認証情報（<code>Authorization: Bearer …</code>）などを伝えます。</li>
+          <li><strong>ボディ：</strong>何かを作成・変更するときに送るデータです。JSONがよく使われます。</li>
+        </ul>
+        <table>
+          <thead><tr><th>メソッド</th><th>主な意味</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET</code></td><td>取得する。省略時の既定値です。</td></tr>
+            <tr><td><code>POST</code></td><td>データを送る。新しく作成するときによく使います。</td></tr>
+            <tr><td><code>PUT</code></td><td>送ったデータで置き換える。</td></tr>
+            <tr><td><code>PATCH</code></td><td>一部を変更する。</td></tr>
+            <tr><td><code>DELETE</code></td><td>削除する。</td></tr>
+            <tr><td><code>HEAD</code></td><td><code>GET</code>と同じですが、ボディなしでレスポンスヘッダーだけを受け取ります。</td></tr>
+            <tr><td><code>OPTIONS</code></td><td>サーバーが何を許可しているかを問い合わせる。</td></tr>
+          </tbody>
+        </table>
+        <p><strong>レスポンス</strong>には<strong>ステータスコード</strong>、ヘッダー、そして多くの場合ボディが含まれます。ステータスコードの最初の数字で結果がわかります。<code>2xx</code>は成功（<code>200 OK</code>、<code>201 Created</code>）、<code>3xx</code>は別の場所へ（リダイレクト）、<code>4xx</code>はリクエスト側の問題（<code>401 Unauthorized</code>、<code>404 Not Found</code>）、<code>5xx</code>はサーバー側の問題です。</p>
+        <aside class="note"><p><strong>ポイント：</strong>curlにとっては、<code>404</code>や<code>500</code>のレスポンスでも「会話は成功」です。エラーになるのはサーバーとまったく通信できなかったときだけです。ただし<code>-f</code>オプション（Kurlyの「HTTPエラー時に失敗とする」）を付けると、<code>4xx</code>・<code>5xx</code>もエラーとして扱います。</p></aside>
+
+        <h3 id="reading-a-command">curlコマンドの読み方</h3>
+        <p>APIのドキュメントでよく見かける、典型的なコマンドの例です。</p>
+<pre><code>curl -X POST 'https://api.example.com/v1/users' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  --data-raw '{"name": "Hanako Yamada"}'</code></pre>
+        <ul>
+          <li><code>curl</code>でプログラムを起動します。その後ろはすべて<em>オプション</em>と<em>URL</em>です。</li>
+          <li><code>-X POST</code>はメソッドの指定です。省略すると、curlは<code>GET</code>（ボディがあるときは<code>POST</code>）を使います。そのためKurlyは、この場合<code>-X POST</code>を省略します。</li>
+          <li><code>'https://…/users'</code>がURLです。</li>
+          <li><code>-H</code>ごとにヘッダーが1つ追加されます。</li>
+          <li><code>--data-raw</code>はボディで、書かれたとおりに送信されます。</li>
+          <li>行末の<code>\</code>は「コマンドが次の行に続く」という意味です。</li>
+          <li>シングルクォート<code>'…'</code>で囲むと、<code>&amp;</code>・<code>?</code>・<code>$</code>・空白などの文字をシェルが特別扱いしなくなります。値の中のシングルクォートは<code>'\''</code>と書きます。</li>
+        </ul>
+        <p>多くのオプションには、<code>-H</code>と<code>--header</code>のように短い名前と長い名前があり、意味は同じです。Kurlyではどちらの形でも表示できます（<a href="#the-command">コマンド</a>を参照）。</p>
+
+        <h3 id="common-options">よく使うオプション</h3>
+        <p>よく使われるオプションと、Kurlyでの対応箇所です。</p>
+        <table>
+          <thead><tr><th>オプション</th><th>働き</th><th>Kurlyでは</th></tr></thead>
+          <tbody>
+            <tr><td><code>-X</code>, <code>--request</code></td><td>メソッドを指定する</td><td>メソッド</td></tr>
+            <tr><td><code>-H</code>, <code>--header</code></td><td>ヘッダーを追加する</td><td>ヘッダー</td></tr>
+            <tr><td><code>-d</code>, <code>--data</code>, <code>--data-raw</code></td><td>ボディを送る（リクエストは<code>POST</code>になる）</td><td>リクエストボディ</td></tr>
+            <tr><td><code>-u</code>, <code>--user</code></td><td><code>ユーザー:パスワード</code>でログインする（ベーシック認証）</td><td>ユーザー</td></tr>
+            <tr><td><code>-A</code>, <code>--user-agent</code></td><td>クライアントを名乗るUser-Agentヘッダーを指定する</td><td>ユーザーエージェント</td></tr>
+            <tr><td><code>-L</code>, <code>--location</code></td><td>リダイレクト（<code>3xx</code>）に従う</td><td>リダイレクトに従う</td></tr>
+            <tr><td><code>-i</code>, <code>--include</code></td><td>ボディの前にレスポンスヘッダーを表示する</td><td>レスポンスヘッダーを含める</td></tr>
+            <tr><td><code>-I</code>, <code>--head</code></td><td>ヘッダーだけを要求する（<code>HEAD</code>）</td><td>メソッド：HEAD</td></tr>
+            <tr><td><code>-v</code>, <code>--verbose</code></td><td>curlが送った内容も含め、やりとりをすべて表示する</td><td>詳細出力</td></tr>
+            <tr><td><code>-s</code>, <code>--silent</code></td><td>進行状況やエラーメッセージを表示しない</td><td>サイレントモード</td></tr>
+            <tr><td><code>-f</code>, <code>--fail</code></td><td><code>4xx</code>・<code>5xx</code>のレスポンスをエラーとして扱う</td><td>HTTPエラー時に失敗とする</td></tr>
+            <tr><td><code>--compressed</code></td><td>圧縮されたレスポンスを要求し、展開する</td><td>圧縮レスポンスを要求</td></tr>
+            <tr><td><code>-m</code>, <code>--max-time</code></td><td>指定した秒数で打ち切る</td><td>タイムアウト</td></tr>
+            <tr><td><code>-o</code>, <code>--output</code></td><td>レスポンスのボディをファイルに保存する</td><td>出力をファイルに保存</td></tr>
+            <tr><td><code>-k</code>, <code>--insecure</code></td><td>サーバーのセキュリティ証明書を検証しない</td><td>TLS証明書の検証をスキップ</td></tr>
+          </tbody>
+        </table>
+        <aside class="note"><p><strong><code>-k</code>は慎重に。</strong>証明書の検証を省くと、本物のサーバーと通信しているか確かめられなくなります。自分の開発用サーバーでテストするときのためのもので、普段使いには向きません。</p></aside>
+
+        <h2 id="getting-started">はじめに</h2>
+        <h3 id="installing">インストール</h3>
+        <p><a href="{{home}}#download">ダウンロード</a>から、お使いのシステム用のKurlyを入手してください。</p>
+        <ul>
+          <li><strong>macOS：</strong><code>.dmg</code>を開き、Kurlyを「アプリケーション」にドラッグします。初回は「開発元を確認できません」と表示されることがあります。その場合は<strong>「システム設定」→「プライバシーとセキュリティ」→「このまま開く」</strong>で許可してください。</li>
+          <li><strong>Windows：</strong><code>.zip</code>を展開して<code>Kurly.exe</code>を実行するだけで、インストールは不要です。SmartScreenが表示された場合は<strong>「詳細情報」→「実行」</strong>を選んでください。</li>
+          <li><strong>Linux：</strong><code>chmod +x Kurly-*.AppImage</code>でAppImageに実行権限を付けて起動します。Arch Linuxでは<a href="https://github.com/Bekind-Labs/kurly#arch-linux">パッケージとしてビルド</a>することもできます。</li>
+        </ul>
+        <p>Kurlyはリクエストの実行にシステムのcurlを使います。curlはmacOS、Windows 10（バージョン1803）以降、そしてほとんどのLinuxディストリビューションに標準で入っています。</p>
+
+        <h3 id="first-request">はじめてのリクエスト</h3>
+        <ol>
+          <li>Kurlyを開き、<strong>URL</strong>に<code>https://httpbin.org/get</code>と入力します。httpbin.orgは、受け取ったリクエストの内容をそのまま返してくれる無料のテスト用サービスです。</li>
+          <li>右側のコマンドが<code>curl https://httpbin.org/get</code>になります。</li>
+          <li><strong>「実行」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>）を押します。コマンドの下にレスポンスが表示され、状態欄には<strong>「完了」</strong>とかかった時間が表示されます。</li>
+          <li>ヘッダーを追加して（たとえば名前<code>X-Hello</code>、値<code>world</code>）もう一度実行すると、httpbinの返答に追加したヘッダーが含まれます。</li>
+        </ol>
+        <picture>
+          <source srcset="{{root}}assets/screenshot-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="Kurlyのウィンドウ。左側にGETリクエストを入力したフォーム、右上にcurlコマンド、その下に整形されたJSONレスポンスが表示されています。" loading="lazy">
+        </picture>
+
+        <h2 id="using-kurly">Kurlyの使い方</h2>
+        <h3 id="the-window">ウィンドウの構成</h3>
+        <p>Kurlyのウィンドウは最大3つの列に分かれていて、境目はドラッグして幅を変えられます。</p>
+        <ul>
+          <li><strong>ライブラリ</strong>（任意・左側）：保存したリクエストの一覧です。<strong>「ライブラリ」</strong>をクリックするまでは表示されません。</li>
+          <li><strong>フォーム</strong>（中央）：リクエストのすべての設定です。ウィンドウが小さいときはスクロールします。</li>
+          <li><strong>コマンドとレスポンス</strong>（右側）：上にcurlコマンド、下に最後に実行したときのレスポンスが表示されます。</li>
+        </ul>
+        <picture>
+          <source srcset="{{root}}assets/library-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="ライブラリを開いたKurlyのウィンドウ。左側に保存済みの5つのリクエスト、中央にフォーム、右側にコマンドとレスポンスが表示されています。" loading="lazy">
+        </picture>
+
+        <h3 id="building">リクエストの作成</h3>
+        <ul>
+          <li><strong>URLとメソッド：</strong>送り先と、何をするか（<a href="#requests">リクエストとレスポンス</a>を参照）。<code>HEAD</code>を選ぶと、curlの<code>-I</code>オプションを使います。</li>
+          <li><strong>ヘッダー：</strong>1行に1つずつ、名前と値を入力します。<strong>「ヘッダーを追加」</strong>で行を追加し、行を選んで<strong>「選択を削除」</strong>で削除します。名前が空の行は無視されます。</li>
+          <li><strong>リクエストボディ：</strong>送信するデータです。入力したとおりに送られる（<code>--data-raw</code>）ので、<code>application/json</code>などの対応する<code>Content-Type</code>ヘッダーと、ボディを送るメソッド（ふつうは<code>POST</code>・<code>PUT</code>・<code>PATCH</code>）を忘れずに指定してください。</li>
+          <li><strong>ユーザー：</strong>ベーシック認証を使うサーバー向けの<code>ユーザー:パスワード</code>です。</li>
+          <li><strong>ユーザーエージェント：</strong>curlが名乗る名前を置き換えます。</li>
+          <li><strong>タイムアウト：</strong>何秒で打ち切るかを指定します。<strong>「なし」</strong>の場合は完了するまで待ちます。</li>
+          <li><strong>出力をファイルに保存：</strong>レスポンスのボディを画面に表示せず、ファイルに書き出します。Kurlyから実行した場合、<code>out.json</code>のような相対パスはホームフォルダーに保存されます。</li>
+          <li><strong>オプション：</strong>よく使うcurlオプションのチェックボックスです。対応は<a href="#common-options">よく使うオプション</a>を参照してください。</li>
+        </ul>
+
+        <h3 id="the-command">コマンド</h3>
+        <p>右上のコマンドは常にフォームの内容と一致しています。<strong>「コマンドをコピー」</strong>でクリップボードにコピーし、ターミナルやスクリプト、ドキュメントに貼り付けられます。次の2つのチェックボックスで、動作を変えずに書き方だけを変えられます。</p>
+        <ul>
+          <li><strong>長いオプション名を使う：</strong><code>-H</code>の代わりに<code>--header</code>と書きます。ドキュメントで読みやすくなります。</li>
+          <li><strong>複数行に分割：</strong>オプションを1行に1つずつ、<code>\</code>でつないで書きます。</li>
+        </ul>
+        <p>どちらの設定も保持されます。コマンドはmacOSやLinuxのシェル（bash、zsh）向けにクォートされ、WindowsでもGit BashやWSLでそのまま使えます。PowerShellについては<a href="#troubleshooting">困ったときは</a>を参照してください。</p>
+
+        <h3 id="running">リクエストの実行</h3>
+        <p><strong>「実行」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>。ボディの入力中でも使えます）を押すと、curlでリクエストを送信します。実行中はボタンが<strong>「停止」</strong>に変わります。</p>
+        <p><strong>レスポンス</strong>欄には、curlが出力した内容がすべて表示されます。レスポンスのボディのほか、オプションをオンにしていればレスポンスヘッダーや詳細ログも表示されます。JSONやXMLのレスポンスを最後まで受け取ると、キーの順番を保ったままインデントして表示します。受け取ったままの形で見たいときは<strong>「JSON/XMLを整形」</strong>のチェックを外してください。非常に大きなレスポンスは約200万文字で打ち切られ、<em>「[出力が長すぎるため省略しました]」</em>と表示されます。その場合は<strong>「出力をファイルに保存」</strong>を使ってください。</p>
+        <p><strong>状態欄</strong>には、実行がどう終わったかが表示されます。</p>
+        <table>
+          <thead><tr><th>表示</th><th>意味</th></tr></thead>
+          <tbody>
+            <tr><td>完了 · 153 ミリ秒</td><td>curlがエラーなく終了しました（HTTPのステータスコードにかかわらず。<a href="#requests">上の説明</a>を参照）。</td></tr>
+            <tr><td>curlが終了コード 6 で終了しました(ホスト名を解決できません)</td><td>サーバー名が見つかりません。URLとインターネット接続を確認してください。</td></tr>
+            <tr><td>curlが終了コード 7 で終了しました(サーバーに接続できません)</td><td>サーバーが接続を受け付けませんでした。サーバーが停止しているか、ポート番号が違う可能性があります。</td></tr>
+            <tr><td>curlが終了コード 22 で終了しました(HTTPエラーが返されました)</td><td>「HTTPエラー時に失敗とする」がオンで、サーバーが<code>4xx</code>・<code>5xx</code>を返しました。</td></tr>
+            <tr><td>curlが終了コード 28 で終了しました(タイムアウトしました)</td><td><strong>タイムアウト</strong>の時間内に応答がありませんでした。</td></tr>
+            <tr><td>curlが終了コード 60 で終了しました(TLS証明書の問題)</td><td>サーバーのセキュリティ証明書を検証できませんでした。</td></tr>
+            <tr><td>停止しました</td><td><strong>「停止」</strong>を押しました。</td></tr>
+            <tr><td>curlを起動できません。インストールされていて PATH に含まれているか確認してください。</td><td>curlがインストールされていないか、見つかりません。<a href="#troubleshooting">困ったときは</a>を参照してください。</td></tr>
+          </tbody>
+        </table>
+        <p>そのほかの終了コードは<a href="https://curl.se/docs/manpage.html#EXIT">curlのドキュメント</a>で説明されています。</p>
+
+        <h3 id="importing">コマンドのインポート</h3>
+        <p><strong>「curlコマンドをインポート…」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd>）をクリックしてコマンドを貼り付けると、フォームに入力されます。クリップボードにcurlコマンドがあれば、あらかじめ入力されています。</p>
+        <p>ブラウザーが送ったリクエストをコピーするには、開発者ツール（<kbd>F12</kbd>、Macでは<kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd>）を開いて<strong>「ネットワーク」</strong>タブを表示し、ページを再読み込みしてから、リクエストを右クリックします。</p>
+        <ul>
+          <li><strong>Chrome・Edge：</strong>「コピー」→「cURL としてコピー（bash）」（Windowsでは「cURL としてコピー（cmd）」も可）。</li>
+          <li><strong>Firefox：</strong>「値をコピー」→「cURL としてコピー」。</li>
+          <li><strong>Safari：</strong>「cURLとしてコピー」。あらかじめSafariの設定の「詳細」で「Web開発者向け機能を表示」をオンにしてください。</li>
+        </ul>
+        <p>bash形式とWindowsのcmd形式のどちらにも対応しています。インポート時に一部の内容は変換されます。<code>-b</code>で指定したCookieは<code>Cookie</code>ヘッダーに、<code>-e</code>は<code>Referer</code>ヘッダーになり、<code>--json</code>はボディとJSON用のヘッダーになります。<code>--proxy</code>やファイルのアップロード（<code>-F</code>）など、Kurlyで表せないオプションはインポート後に一覧で表示され、取り込まれません。</p>
+        <p>ライブラリを開いているときは、インポートしたコマンドは新しいリクエストとして追加されます（現在のリクエストが空の場合を除く）。保存済みのリクエストが上書きされることはありません。ライブラリを閉じているときは、現在のリクエストが置き換えられます。</p>
+
+        <h3 id="library">リクエストの保存</h3>
+        <p class="badge-line"><span class="badge">Kurly 0.2以降</span></p>
+        <p>Kurlyは作業内容を自動的に保存します。アプリを閉じても、次に開いたときにはリクエストがそのまま残っています。複数のリクエストを残しておくには、<strong>「ライブラリ」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>B</kbd>）をクリックして保存済みリクエストの一覧を表示します。リクエストをクリックすると開きます。リクエストごとにレスポンスが保持され、実行中のリクエストは、別のリクエストを見ている間もバックグラウンドで実行が続きます。</p>
+        <ul>
+          <li><strong>「新規」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>N</kbd>）で空のリクエストを追加し、<strong>「複製」</strong>で選択中のリクエストをコピーします。</li>
+          <li>リクエストをダブルクリックするか<kbd>F2</kbd>を押すと、<strong>名前を変更</strong>できます。名前のないリクエストは<code>GET api.example.com/v1/users</code>のようにメソッドとアドレスで表示されます。名前を消すと、この表示に戻ります。</li>
+          <li><strong>「削除」</strong>（または<kbd>Delete</kbd>キー。Macでは<kbd>⌫</kbd>）で、確認のうえ選択中のリクエストを削除します。</li>
+          <li>リクエストを<strong>ドラッグ</strong>して並べ替えられます。一覧の上の欄に入力すると、名前やURLで<strong>絞り込み</strong>ができます。</li>
+          <li>リクエストを右クリックしても、同じ操作ができます。</li>
+        </ul>
+        <p>ライブラリは、Kurlyのアプリデータ用フォルダーにある<code>library.json</code>というファイルに保存されます。</p>
+        <table>
+          <thead><tr><th>システム</th><th>フォルダー</th></tr></thead>
+          <tbody>
+            <tr><td>macOS</td><td><code>~/Library/Application Support/Bekind Labs/Kurly/</code></td></tr>
+            <tr><td>Windows</td><td><code>%APPDATA%\Bekind Labs\Kurly\</code></td></tr>
+            <tr><td>Linux</td><td><code>~/.local/share/Bekind Labs/Kurly/</code></td></tr>
+          </tbody>
+        </table>
+        <aside class="note"><p><strong>パスワードやトークンについて：</strong><code>Authorization</code>ヘッダーや<strong>ユーザー</strong>のパスワードなど、リクエストには認証情報が含まれることがあります。これらは、あなたのユーザーアカウントだけが読めるファイルに、平文で保存されます。パソコン上のファイルに置いておきたくない秘密情報は保存しないでください。</p></aside>
+
+        <h3 id="language">言語</h3>
+        <p>Kurlyは、システムの言語が日本語なら日本語で、それ以外なら英語で起動します。右上の<strong>「言語」</strong>でいつでも切り替えられ、選んだ言語は次回も保持されます。</p>
+
+        <h3 id="shortcuts">キーボードショートカット</h3>
+        <p>Macでは、表の<kbd>Ctrl</kbd>を<kbd>⌘</kbd>に読み替えてください。</p>
+        <table>
+          <thead><tr><th>ショートカット</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Return</kbd></td><td>リクエストを実行</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd></td><td>curlコマンドをインポート</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td><td>ライブラリの表示・非表示</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>新しいリクエスト</td></tr>
+            <tr><td><kbd>F2</kbd></td><td>選択中のリクエストの名前を変更（ライブラリ内）</td></tr>
+            <tr><td><kbd>Delete</kbd>（Macでは<kbd>⌫</kbd>）</td><td>選択中のリクエストを削除（ライブラリ内）</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="troubleshooting">困ったときは</h2>
+        <dl>
+          <dt>「curlを起動できません」と表示される</dt>
+          <dd>Kurlyが<code>curl</code>プログラムを見つけられません。システムのパッケージマネージャーでインストールし（例：<code>sudo apt install curl</code>）、Kurlyを再起動してください。</dd>
+          <dt>macOSで「開けません」「確認できません」と表示される</dt>
+          <dd>KurlyはまだAppleの公証を受けていません。<strong>「システム設定」→「プライバシーとセキュリティ」</strong>を開き、Kurlyに関するメッセージの横の<strong>「このまま開く」</strong>をクリックしてください。一度許可すれば、次からは表示されません。</dd>
+          <dt>Windowsで「WindowsによってPCが保護されました」と表示される</dt>
+          <dd><strong>「詳細情報」→「実行」</strong>を選んでください。SmartScreenは、まだあまり利用されていないアプリに対してこの表示を出します。</dd>
+          <dt>LinuxでAppImageが起動しない</dt>
+          <dd>実行権限があるか確認してください（<code>chmod +x Kurly-*.AppImage</code>）。また、AppImageにはFUSE 2が必要ですが、最近のUbuntuには標準では入っていません。<code>libfuse2</code>（Ubuntu 24.04では<code>libfuse2t64</code>）をインストールするか、<code>--appimage-extract-and-run</code>を付けて起動してください。</dd>
+          <dt>コピーしたコマンドがPowerShellで動かない</dt>
+          <dd>Windows PowerShellの<code>curl</code>は別のコマンド（<code>Invoke-WebRequest</code>の別名）です。代わりに<code>curl.exe</code>と入力してください。また、PowerShellでは<code>\</code>で行を続けられないため、<strong>「複数行に分割」</strong>はオフにしてください。いちばん手軽なのは、Git BashやWSLで実行する方法です。</dd>
+          <dt>プロキシ経由でリクエストを送りたい</dt>
+          <dd>curlは<code>HTTPS_PROXY</code>や<code>NO_PROXY</code>などの標準的なプロキシ用環境変数を使います。Kurlyを起動する前にこれらを設定しておけば、Kurlyからのリクエストにも適用されます。</dd>
+          <dt>「ライブラリが破損しています」と表示される</dt>
+          <dd><code>library.json</code>を読み込めなかったため、新しいライブラリを作成しました。元のファイルは同じ場所に<code>library.json.corrupt-…</code>として残っているので、内容は失われていません。</dd>
+          <dt>「This plugin supports grabbing the mouse only for popup windows」と表示される</dt>
+          <dd>Waylandのデスクトップで、Qtがターミナルに出力する無害なメッセージです。問題はありません。</dd>
+        </dl>
+        <p>ほかにお困りのことがあれば、<a href="https://github.com/Bekind-Labs/kurly/issues">GitHubで問題を報告</a>してください。</p>
+
+        <h2 id="privacy">プライバシー</h2>
+        <p>Kurlyにはアカウント登録もトラッキングもありません。ネットワークに接続するのはリクエストを実行したときだけで、接続先はリクエストに指定したアドレスのみ、使うのもあなたのcurlです。リクエストは、あなたのパソコン上のライブラリファイルに保存されます。</p>

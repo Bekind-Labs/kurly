@@ -18,6 +18,34 @@ right-click a request → Copy → Copy as cURL). Both the bash and Windows cmd
 formats work. If a curl command is already on the clipboard, it's filled in
 for you. Options Kurly can't represent are listed and skipped.
 
+### Saving requests
+
+Kurly keeps your work automatically: close it and the request is still there
+next time. To keep several requests, click **Library** (Ctrl/⌘+B) to show
+the sidebar, where you can:
+
+- add (**New**, Ctrl/⌘+N), **Duplicate** and **Delete** requests;
+- switch between them, each keeping its own response (a running request
+  carries on in the background);
+- rename one by double-clicking it or pressing F2 (clear the name to go back
+  to the automatic "GET example.com/path" one), and drag to reorder;
+- filter the list by name or URL.
+
+When the library is showing, importing a command adds it as a new request
+instead of replacing the current one.
+
+The library is a JSON file, `library.json`, in Kurly's data folder:
+
+| System | Location |
+|---|---|
+| Linux | `~/.local/share/Bekind Labs/Kurly/` |
+| macOS | `~/Library/Application Support/Bekind Labs/Kurly/` |
+| Windows | `%APPDATA%\Bekind Labs\Kurly\` |
+
+Requests can contain passwords and tokens, which are stored as plain text, so
+the file is readable only by your user account. If the file is ever damaged,
+Kurly keeps a copy next to it (`library.json.corrupt-…`) and starts a new one.
+
 The UI is available in **English** and **Japanese (日本語)**. It follows the
 system language on first launch, and you can switch at any time from the
 language selector in the top-right corner. The choice is remembered.
@@ -127,7 +155,10 @@ ctest --test-dir build --output-on-failure
 | `tst_curlcommand` | Building commands, shell quoting |
 | `tst_curlparser` | Importing commands: bash/cmd quoting, browser "Copy as cURL" output, every supported option, build→parse round trips |
 | `tst_responseformatter` | JSON/XML pretty-printing, `--include` header handling |
+| `tst_requeststore` | The saved-request library: saving and loading, autosave, file permissions, damaged files, files from newer versions, editing |
+| `tst_requestrunner` | Running curl and collecting its output, stopping, missing curl |
 | `tst_importdialog` | The import dialog: clipboard pre-fill, error messages |
+| `tst_library` | The library sidebar: showing it, new/duplicate/delete/rename/reorder/filter, keyboard shortcuts, import, per-request responses, persistence across restarts, file problems |
 | `tst_mainwindow` | The window end to end: form ↔ command, headers, copy, language switching, import, scrolling, and **Run** against a local test server (success, HTTP errors, timeouts, stop, huge responses, formatting) |
 | `tst_translations` | Every Japanese string is translated, with matching `%1` placeholders |
 | `translations_up_to_date` | No UI strings were added without updating `translations/kurly_ja.ts` |
@@ -168,13 +199,19 @@ and the Windows `kurly.ico`.
 
 ## Website
 
-The landing page lives in `site/` and is published to GitHub Pages by
-`.github/workflows/pages.yml` whenever it changes on `main`.
+The website lives in `site/` and is published to GitHub Pages by
+`.github/workflows/pages.yml` whenever it changes on `main`. It has a landing
+page and a guide, each in English (`/`, `/docs/`) and Japanese (`/ja/`,
+`/ja/docs/`).
 
-- `site/template.html` is the page; all text comes from
-  `site/strings/en.json` and `site/strings/ja.json`. The build fails if the
-  two languages don't have the same strings, or the template uses one that
-  doesn't exist.
+- `site/pages/` holds a template per page, and `site/partials/` the pieces
+  they share (`<head>`, header, footer).
+- Short texts come from `site/strings/en.json` and `site/strings/ja.json`.
+  The guide's text is in `site/content/docs.en.html` and `docs.ja.html`; its
+  table of contents is generated from the headings.
+- The build fails if the two languages' strings differ, a template uses one
+  that doesn't exist, the guides don't have the same sections in the same
+  order, or a link points to a section that doesn't exist.
 - `site/static/` holds the CSS, JavaScript, screenshots and social preview
   images. The download buttons fetch the latest release from GitHub, so the
   site doesn't need changing for new versions.
@@ -185,8 +222,26 @@ To build and preview it locally:
 python3 site/build.py && python3 -m http.server -d site/_site 8000
 ```
 
-Then open <http://localhost:8000>. After changing the headline or the
-screenshots, regenerate the social preview images with
+Then open <http://localhost:8000>.
+
+**Screenshots.** Every screenshot comes in a light and a dark version, and
+the site shows the one matching the visitor's theme. After changing the
+interface, retake them all (both themes, both languages, with and without the
+library) with the screenshot tool, which drives Kurly's real window with a
+stand-in curl (Linux/macOS):
+
+```bash
+cmake -S . -B build -DKURLY_BUILD_SCREENSHOT_TOOL=ON && cmake --build build --target kurly-screenshots
+```
+
+```bash
+QT_QPA_PLATFORM=offscreen QT_SCALE_FACTOR=2 ./build/tools/screenshots/kurly-screenshots shots
+```
+
+Convert them into `site/static/assets/` as `screenshot-<lang>[-dark].webp`
+(from `main-*`) and `library-<lang>[-dark].webp` (from `library-*`), for
+example with `convert shots/main-en-dark.png -quality 88 site/static/assets/screenshot-en-dark.webp`.
+Then regenerate the social preview images with
 `node site/tools/make-og-images.js` (needs Playwright).
 
 ## Layout
@@ -194,12 +249,16 @@ screenshots, regenerate the social preview images with
 - `src/curlcommand.*` – GUI-independent command builder and shell quoting
 - `src/curlparser.*` – GUI-independent parser for importing existing curl commands
 - `src/responseformatter.*` – GUI-independent JSON/XML pretty-printing
+- `src/requeststore.*` – GUI-independent library of saved requests and its JSON file
+- `src/requestrunner.*` – GUI-independent runner for one request's curl process
 - `src/importdialog.*` – the import dialog
-- `src/mainwindow.*` – the form, command/response panes, running curl, and language switching
+- `src/librarypanel.*` – the library sidebar
+- `src/mainwindow.*` – the form, command/response panes, and language switching
 - `packaging/` – scripts that build the release packages
 - `site/` – the website (see above)
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)
+- `tools/screenshots/` – the tool that takes the website's screenshots
 
 ## License
 

@@ -1,13 +1,12 @@
 {
-  "meta_title": "Kurly – a friendly app for building curl commands",
-  "meta_description": "Kurly is a free desktop app for macOS, Windows and Linux. Build curl commands with a form, import them from your browser, run them, and read nicely formatted responses. In English and Japanese.",
+  "index_meta_title": "Kurly – a friendly app for building curl commands",
+  "index_meta_description": "Kurly is a free desktop app for macOS, Windows and Linux. Build curl commands with a form, import them from your browser, run them, and read nicely formatted responses. In English and Japanese.",
   "og_locale": "en_US",
   "skip_to_content": "Skip to content",
   "nav_label": "Main",
   "nav_features": "Features",
   "nav_download": "Download",
   "lang_switch_label": "Language",
-
   "hero_eyebrow": "Free and open source · macOS · Windows · Linux",
   "hero_title": "curl commands, without the guesswork.",
   "hero_lead": "Kurly is a friendly desktop app for building curl commands. Fill in a form and copy the exact command, or run it and read a neatly formatted response.",
@@ -15,7 +14,6 @@
   "hero_github": "View on GitHub",
   "hero_meta": "Latest release · MIT License",
   "screenshot_alt": "The Kurly window. On the left, a form with the URL, method and headers of a request. On the right, the matching curl command and the request's JSON response, neatly indented.",
-
   "features_title": "Everything a request needs, nothing it doesn't",
   "features_lead": "Kurly turns curl's many options into a form you can read at a glance.",
   "feature_build_title": "Build with a form",
@@ -30,13 +28,11 @@
   "feature_lang_text": "Kurly starts in your system's language. Switch any time; it remembers your choice.",
   "feature_private_title": "Private by design",
   "feature_private_text": "No account, no tracking. Requests go straight from your computer, through your own curl.",
-
   "steps_title": "From your browser to a working command in seconds",
   "step_1": "In your browser's developer tools, open the <strong>Network</strong> tab, right-click a request and choose <strong>Copy → Copy as cURL</strong>.",
   "step_2": "In Kurly, click <strong>Import curl command…</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd>). It's already filled in from your clipboard.",
   "step_3": "Adjust anything in the form, then press <strong>Run</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>) to see the response.",
   "terminal_caption": "A command copied from the browser",
-
   "download_title": "Download Kurly",
   "download_lead": "Free for macOS, Windows and Linux.",
   "download_mac_req": "Apple Silicon Macs (M1 or later)",
@@ -52,12 +48,10 @@
   "download_checksums": "SHA-256 checksums",
   "download_source": "Build from source",
   "download_curl_note": "Kurly uses the curl command to run requests. It's already installed on macOS, Windows 10 and later, and nearly every Linux distribution.",
-
   "footer_license": "Kurly is free software under the MIT License. Made by Bekind Labs.",
   "footer_nav_label": "Project links",
   "footer_releases": "Releases",
   "footer_issues": "Report a problem",
-
   "js_download_for": "Download for {os}",
   "js_version_meta": "Version {version} · MIT License",
   "js_download_lead": "Version {version}, free for macOS, Windows and Linux.",
@@ -66,5 +60,13 @@
   "js_mac_intel": "Intel Macs",
   "js_os_mac": "macOS",
   "js_os_windows": "Windows",
-  "js_os_linux": "Linux"
+  "js_os_linux": "Linux",
+  "nav_docs": "Guide",
+  "docs_meta_title": "Kurly guide – curl basics and how to use Kurly",
+  "docs_meta_description": "What Kurly is for, a short introduction to curl and HTTP requests, and how to use every part of the app: building, running and importing commands, and saving requests.",
+  "docs_eyebrow": "Guide",
+  "docs_title": "The Kurly guide",
+  "docs_lead": "What Kurly is for, a short introduction to curl, and how to use every part of the app.",
+  "docs_toc_label": "On this page",
+  "features_guide_link": "New to curl? Read the guide →"
 }

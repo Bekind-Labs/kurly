@@ -1,0 +1,226 @@
+        <h2 id="what-is-kurly">What Kurly is for</h2>
+        <p>Kurly is a desktop app for working with <strong>curl commands</strong>: the one-line recipes for calling a web API that you find in API documentation, bug reports, chat messages and your browser's developer tools.</p>
+        <p>curl is powerful, but its commands are hard to read and easy to get wrong: dozens of options, careful quoting, long lines. Kurly turns a request into a form you can read at a glance, and keeps the matching command in sync as you edit. Use it to:</p>
+        <ul>
+          <li><strong>Build</strong> a command without memorizing curl's options, then copy it into a terminal, a script or documentation.</li>
+          <li><strong>Understand</strong> a command someone sent you: import it and see the URL, headers and body laid out in a form.</li>
+          <li><strong>Try</strong> an API: run the request and read the response, with JSON and XML neatly indented.</li>
+          <li><strong>Keep</strong> the requests you use often in a library, so they're one click away next time.</li>
+        </ul>
+        <p>Kurly runs on macOS, Windows and Linux, in English and Japanese. It's free and open source.</p>
+
+        <h2 id="what-is-curl">What is curl?</h2>
+        <p><a href="https://curl.se/">curl</a> is a free command-line program for sending requests to servers and printing what comes back. It has been around since 1998, speaks many protocols (most often HTTP and HTTPS, the protocols of the web), and is installed on macOS, Windows 10 and later, and almost every Linux system. Because it's everywhere, a curl command has become the standard way to show exactly how to call an API.</p>
+        <p>Kurly doesn't replace curl: it uses the curl already on your computer to run requests, and the commands it shows are real curl commands you can run anywhere.</p>
+
+        <h3 id="requests">Requests and responses</h3>
+        <p>Talking to a web API is a conversation of <em>requests</em> and <em>responses</em>. Your request says what you want; the server's response says what happened.</p>
+        <p>A <strong>request</strong> has:</p>
+        <ul>
+          <li>a <strong>URL</strong>: where to send it, such as <code>https://api.example.com/v1/users/42</code>. Anything after a <code>?</code> is the <em>query string</em>, extra parameters like <code>?page=2</code>;</li>
+          <li>a <strong>method</strong>: what to do (see below);</li>
+          <li><strong>headers</strong>: extra information as <code>Name: value</code> pairs, such as the format you want back (<code>Accept: application/json</code>) or your credentials (<code>Authorization: Bearer …</code>);</li>
+          <li>sometimes a <strong>body</strong>: data to send, often JSON, when creating or changing something.</li>
+        </ul>
+        <table>
+          <thead><tr><th>Method</th><th>Usually means</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET</code></td><td>Fetch something. The default.</td></tr>
+            <tr><td><code>POST</code></td><td>Send data, often to create something new.</td></tr>
+            <tr><td><code>PUT</code></td><td>Replace something with the data you send.</td></tr>
+            <tr><td><code>PATCH</code></td><td>Change part of something.</td></tr>
+            <tr><td><code>DELETE</code></td><td>Remove something.</td></tr>
+            <tr><td><code>HEAD</code></td><td>Like <code>GET</code>, but only the response headers, without the body.</td></tr>
+            <tr><td><code>OPTIONS</code></td><td>Ask what the server allows.</td></tr>
+          </tbody>
+        </table>
+        <p>A <strong>response</strong> has a <strong>status code</strong>, headers and usually a body. The status code's first digit tells you how it went: <code>2xx</code> success (<code>200 OK</code>, <code>201 Created</code>), <code>3xx</code> look elsewhere (a redirect), <code>4xx</code> a problem with the request (<code>401 Unauthorized</code>, <code>404 Not Found</code>), <code>5xx</code> a problem on the server.</p>
+        <aside class="note"><p><strong>Good to know:</strong> to curl, a <code>404</code> or <code>500</code> response is still a successful conversation. It only reports an error if it couldn't talk to the server at all, unless you use the <code>-f</code> option (<em>Fail on HTTP errors</em> in Kurly).</p></aside>
+
+        <h3 id="reading-a-command">Reading a curl command</h3>
+        <p>Here is a typical command, as you might find it in API documentation:</p>
+<pre><code>curl -X POST 'https://api.example.com/v1/users' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  --data-raw '{"name": "Hanako Yamada"}'</code></pre>
+        <ul>
+          <li><code>curl</code> runs the program; everything after it is <em>options</em> and the <em>URL</em>.</li>
+          <li><code>-X POST</code> sets the method. Without it, curl uses <code>GET</code>, or <code>POST</code> when there's a body, so Kurly leaves <code>-X POST</code> out in that case.</li>
+          <li><code>'https://…/users'</code> is the URL.</li>
+          <li>Each <code>-H</code> adds a header.</li>
+          <li><code>--data-raw</code> is the body, sent exactly as written.</li>
+          <li>The <code>\</code> at the end of a line means "the command continues on the next line".</li>
+          <li>The single quotes <code>'…'</code> keep the shell from treating characters like <code>&amp;</code>, <code>?</code>, <code>$</code> or spaces specially. A quote inside a quoted value is written <code>'\''</code>.</li>
+        </ul>
+        <p>Most options have a short and a long name, such as <code>-H</code> and <code>--header</code>; they mean the same. Kurly can show either (see <a href="#the-command">The command</a>).</p>
+
+        <h3 id="common-options">Common options</h3>
+        <p>The options you'll meet most, and where to find them in Kurly:</p>
+        <table>
+          <thead><tr><th>Option</th><th>What it does</th><th>In Kurly</th></tr></thead>
+          <tbody>
+            <tr><td><code>-X</code>, <code>--request</code></td><td>Sets the method</td><td>Method</td></tr>
+            <tr><td><code>-H</code>, <code>--header</code></td><td>Adds a header</td><td>Headers</td></tr>
+            <tr><td><code>-d</code>, <code>--data</code>, <code>--data-raw</code></td><td>Sends a body (and makes the request a <code>POST</code>)</td><td>Request body</td></tr>
+            <tr><td><code>-u</code>, <code>--user</code></td><td>Logs in with <code>user:password</code> (basic authentication)</td><td>User</td></tr>
+            <tr><td><code>-A</code>, <code>--user-agent</code></td><td>Sets the User-Agent header that names your client</td><td>User agent</td></tr>
+            <tr><td><code>-L</code>, <code>--location</code></td><td>Follows redirects (<code>3xx</code> responses)</td><td>Follow redirects</td></tr>
+            <tr><td><code>-i</code>, <code>--include</code></td><td>Shows the response headers above the body</td><td>Include response headers</td></tr>
+            <tr><td><code>-I</code>, <code>--head</code></td><td>Asks for headers only (<code>HEAD</code>)</td><td>Method: HEAD</td></tr>
+            <tr><td><code>-v</code>, <code>--verbose</code></td><td>Shows the whole conversation, including what curl sent</td><td>Verbose output</td></tr>
+            <tr><td><code>-s</code>, <code>--silent</code></td><td>Hides progress and error messages</td><td>Silent mode</td></tr>
+            <tr><td><code>-f</code>, <code>--fail</code></td><td>Treats <code>4xx</code>/<code>5xx</code> responses as errors</td><td>Fail on HTTP errors</td></tr>
+            <tr><td><code>--compressed</code></td><td>Asks for a compressed response and unpacks it</td><td>Request compressed response</td></tr>
+            <tr><td><code>-m</code>, <code>--max-time</code></td><td>Gives up after this many seconds</td><td>Timeout</td></tr>
+            <tr><td><code>-o</code>, <code>--output</code></td><td>Saves the response body to a file</td><td>Save output to file</td></tr>
+            <tr><td><code>-k</code>, <code>--insecure</code></td><td>Skips checking the server's security certificate</td><td>Skip TLS certificate verification</td></tr>
+          </tbody>
+        </table>
+        <aside class="note"><p><strong>Use <code>-k</code> with care.</strong> Skipping certificate checks means you can't be sure you're talking to the real server. It's for testing against your own development servers, not for everyday use.</p></aside>
+
+        <h2 id="getting-started">Getting started</h2>
+        <h3 id="installing">Installing</h3>
+        <p>Download Kurly for your system from the <a href="{{home}}#download">download section</a>:</p>
+        <ul>
+          <li><strong>macOS:</strong> open the <code>.dmg</code> and drag Kurly into Applications. The first time, macOS may say it can't check the app; allow it under <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</li>
+          <li><strong>Windows:</strong> unzip the <code>.zip</code> and run <code>Kurly.exe</code>; there's nothing to install. If SmartScreen appears, choose <strong>More info → Run anyway</strong>.</li>
+          <li><strong>Linux:</strong> make the AppImage executable with <code>chmod +x Kurly-*.AppImage</code> and run it. On Arch Linux you can also <a href="https://github.com/Bekind-Labs/kurly#arch-linux">build a package</a>.</li>
+        </ul>
+        <p>Kurly uses your system's curl to run requests. It's already installed on macOS, Windows 10 (version 1803) and later, and nearly every Linux distribution.</p>
+
+        <h3 id="first-request">Your first request</h3>
+        <ol>
+          <li>Open Kurly and type <code>https://httpbin.org/get</code> into <strong>URL</strong>. httpbin.org is a free test service that replies with a description of the request it received.</li>
+          <li>The command on the right reads <code>curl https://httpbin.org/get</code>.</li>
+          <li>Press <strong>Run</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>). The response appears below the command, and the status line shows <strong>Done</strong> and how long it took.</li>
+          <li>Add a header, for example <code>X-Hello</code> with the value <code>world</code>, and run it again: httpbin's reply now includes your header.</li>
+        </ol>
+        <picture>
+          <source srcset="{{root}}assets/screenshot-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="The Kurly window with a GET request filled in on the left, the curl command at the top right and the formatted JSON response below it." loading="lazy">
+        </picture>
+
+        <h2 id="using-kurly">Using Kurly</h2>
+        <h3 id="the-window">The window</h3>
+        <p>Kurly's window has up to three columns, separated by dividers you can drag:</p>
+        <ul>
+          <li><strong>Library</strong> (optional, on the left): your saved requests. Hidden until you click <strong>Library</strong>.</li>
+          <li><strong>The form</strong> (middle): everything about the request. It scrolls when the window is small.</li>
+          <li><strong>Command and response</strong> (right): the curl command at the top, and the response of the last run below it.</li>
+        </ul>
+        <picture>
+          <source srcset="{{root}}assets/library-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="The Kurly window with the library open: a list of five saved requests on the left, the form in the middle and the command and response on the right." loading="lazy">
+        </picture>
+
+        <h3 id="building">Building a request</h3>
+        <ul>
+          <li><strong>URL and Method:</strong> where to send the request and what to do (see <a href="#requests">Requests and responses</a>). Choosing <code>HEAD</code> uses curl's <code>-I</code> option.</li>
+          <li><strong>Headers:</strong> one header per row, with its name and value. Click <strong>Add header</strong> for another row; select rows and click <strong>Remove selected</strong> to delete them. Rows without a name are ignored.</li>
+          <li><strong>Request body:</strong> the data to send. It's sent exactly as typed (<code>--data-raw</code>), so remember the matching <code>Content-Type</code> header, such as <code>application/json</code>, and a method that takes a body, usually <code>POST</code>, <code>PUT</code> or <code>PATCH</code>.</li>
+          <li><strong>User:</strong> <code>user:password</code> for servers that use basic authentication.</li>
+          <li><strong>User agent:</strong> replaces the name curl sends to identify itself.</li>
+          <li><strong>Timeout:</strong> how many seconds to wait before giving up; <strong>None</strong> waits as long as it takes.</li>
+          <li><strong>Save output to file:</strong> writes the response body to a file instead of showing it. When you run the request from Kurly, a relative path like <code>out.json</code> is saved in your home folder.</li>
+          <li><strong>Options:</strong> the checkboxes for common curl options, listed in <a href="#common-options">Common options</a>.</li>
+        </ul>
+
+        <h3 id="the-command">The command</h3>
+        <p>The command at the top right always matches the form. Click <strong>Copy command</strong> to put it on the clipboard, ready to paste into a terminal, a script or documentation. Two checkboxes change how it's written, without changing what it does:</p>
+        <ul>
+          <li><strong>Use long option names:</strong> <code>--header</code> instead of <code>-H</code>, easier to read in documentation.</li>
+          <li><strong>Split across multiple lines:</strong> one option per line, joined with <code>\</code>.</li>
+        </ul>
+        <p>Kurly remembers both choices. Commands are quoted for macOS and Linux shells (bash, zsh), and also work in Git Bash and WSL on Windows. For PowerShell, see <a href="#troubleshooting">Troubleshooting</a>.</p>
+
+        <h3 id="running">Running a request</h3>
+        <p>Click <strong>Run</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>, which also works while typing in the body) to send the request with your curl. While it runs, the button becomes <strong>Stop</strong>.</p>
+        <p>The <strong>response</strong> pane shows everything curl printed: the response body, and also response headers or the verbose log if you turned those options on. When a complete JSON or XML response arrives, it's shown indented, with keys in their original order; untick <strong>Format JSON/XML</strong> to see it exactly as received. Very large responses are cut off after about two million characters, marked <em>[Output truncated]</em>; use <strong>Save output to file</strong> for those.</p>
+        <p>The <strong>status line</strong> says how the run ended:</p>
+        <table>
+          <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>Done · 153 ms</td><td>curl finished without errors (whatever the HTTP status code; see <a href="#requests">the note above</a>).</td></tr>
+            <tr><td>curl exited with code 6 (could not resolve host)</td><td>The server's name couldn't be found. Check the URL and your internet connection.</td></tr>
+            <tr><td>curl exited with code 7 (could not connect to server)</td><td>The server didn't accept the connection: it may be down, or the port is wrong.</td></tr>
+            <tr><td>curl exited with code 22 (HTTP error returned)</td><td>The server answered with a <code>4xx</code> or <code>5xx</code> status and <em>Fail on HTTP errors</em> is on.</td></tr>
+            <tr><td>curl exited with code 28 (timed out)</td><td>No answer within the <strong>Timeout</strong>.</td></tr>
+            <tr><td>curl exited with code 60 (TLS certificate problem)</td><td>The server's security certificate couldn't be verified.</td></tr>
+            <tr><td>Stopped</td><td>You clicked <strong>Stop</strong>.</td></tr>
+            <tr><td>Could not start curl. Is it installed and on your PATH?</td><td>curl isn't installed or can't be found; see <a href="#troubleshooting">Troubleshooting</a>.</td></tr>
+          </tbody>
+        </table>
+        <p>Other codes are explained in <a href="https://curl.se/docs/manpage.html#EXIT">curl's documentation</a>.</p>
+
+        <h3 id="importing">Importing a command</h3>
+        <p>Click <strong>Import curl command…</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd>) and paste a command to fill in the form. If there's already a curl command on your clipboard, it's filled in for you.</p>
+        <p>To copy any request your browser makes, open its developer tools (<kbd>F12</kbd>, or <kbd>⌥</kbd>+<kbd>⌘</kbd>+<kbd>I</kbd> on a Mac), go to the <strong>Network</strong> tab, reload the page, then right-click a request:</p>
+        <ul>
+          <li><strong>Chrome, Edge:</strong> Copy → Copy as cURL (bash), or Copy as cURL (cmd) on Windows.</li>
+          <li><strong>Firefox:</strong> Copy Value → Copy as cURL.</li>
+          <li><strong>Safari:</strong> Copy as cURL. (Turn on <em>Show features for web developers</em> in Safari's Advanced settings first.)</li>
+        </ul>
+        <p>Both the bash format and the Windows cmd format work. A few things are adjusted on import: cookies given with <code>-b</code> become a <code>Cookie</code> header, <code>-e</code> becomes a <code>Referer</code> header, and <code>--json</code> sets the body and the JSON headers. Options Kurly can't represent, such as <code>--proxy</code> or file uploads (<code>-F</code>), are listed after the import and left out.</p>
+        <p>When the library is open, an imported command becomes a new request, unless the current one is still empty, so imports never overwrite a saved request. With the library hidden, the import replaces the current request.</p>
+
+        <h3 id="library">Saving requests</h3>
+        <p class="badge-line"><span class="badge">Kurly 0.2 and later</span></p>
+        <p>Kurly saves your work automatically: close it, and your request is there next time. To keep several requests, click <strong>Library</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>B</kbd>) to show the list of saved requests. Click a request to open it; each one keeps its own response, and a request that's still running carries on in the background while you look at another.</p>
+        <ul>
+          <li><strong>New</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>N</kbd>) adds an empty request; <strong>Duplicate</strong> copies the selected one.</li>
+          <li><strong>Rename</strong> a request by double-clicking it or pressing <kbd>F2</kbd>. Requests without a name are shown as their method and address, like <code>GET api.example.com/v1/users</code>; clear a name to go back to that.</li>
+          <li><strong>Delete</strong> (or the <kbd>Delete</kbd> key, <kbd>⌫</kbd> on a Mac) removes the selected request after asking.</li>
+          <li><strong>Drag</strong> requests to reorder them, and type in the box above the list to <strong>filter</strong> by name or URL.</li>
+          <li>Right-click a request for the same actions.</li>
+        </ul>
+        <p>The library is stored in a file called <code>library.json</code>, in Kurly's folder for app data:</p>
+        <table>
+          <thead><tr><th>System</th><th>Folder</th></tr></thead>
+          <tbody>
+            <tr><td>macOS</td><td><code>~/Library/Application Support/Bekind Labs/Kurly/</code></td></tr>
+            <tr><td>Windows</td><td><code>%APPDATA%\Bekind Labs\Kurly\</code></td></tr>
+            <tr><td>Linux</td><td><code>~/.local/share/Bekind Labs/Kurly/</code></td></tr>
+          </tbody>
+        </table>
+        <aside class="note"><p><strong>About passwords and tokens:</strong> requests can contain credentials, such as an <code>Authorization</code> header or a <strong>User</strong> password. They're saved as plain text, in a file only your user account can read. Avoid saving secrets you wouldn't keep in a file on your computer.</p></aside>
+
+        <h3 id="language">Language</h3>
+        <p>Kurly starts in your system's language if it's Japanese, and in English otherwise. Use <strong>Language</strong> at the top right to switch at any time; Kurly remembers your choice.</p>
+
+        <h3 id="shortcuts">Keyboard shortcuts</h3>
+        <p>On a Mac, use <kbd>⌘</kbd> where this table says <kbd>Ctrl</kbd>.</p>
+        <table>
+          <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Return</kbd></td><td>Run the request</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd></td><td>Import a curl command</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td><td>Show or hide the library</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>New request</td></tr>
+            <tr><td><kbd>F2</kbd></td><td>Rename the selected request (in the library)</td></tr>
+            <tr><td><kbd>Delete</kbd> (<kbd>⌫</kbd> on a Mac)</td><td>Delete the selected request (in the library)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="troubleshooting">Troubleshooting</h2>
+        <dl>
+          <dt>"Could not start curl"</dt>
+          <dd>Kurly couldn't find the <code>curl</code> program. Install it with your system's package manager (for example <code>sudo apt install curl</code>), then restart Kurly.</dd>
+          <dt>macOS says Kurly can't be opened or checked</dt>
+          <dd>Kurly isn't notarized by Apple yet. Open <strong>System Settings → Privacy &amp; Security</strong> and click <strong>Open Anyway</strong> next to the message about Kurly. You only need to do this once.</dd>
+          <dt>Windows shows "Windows protected your PC"</dt>
+          <dd>Choose <strong>More info → Run anyway</strong>. SmartScreen shows this for apps it hasn't seen often.</dd>
+          <dt>The AppImage doesn't start on Linux</dt>
+          <dd>Make sure it's executable (<code>chmod +x Kurly-*.AppImage</code>). AppImages also need FUSE 2, which newer Ubuntu releases don't install by default: install <code>libfuse2</code> (<code>libfuse2t64</code> on Ubuntu 24.04), or run the AppImage with <code>--appimage-extract-and-run</code>.</dd>
+          <dt>A copied command doesn't work in PowerShell</dt>
+          <dd>In Windows PowerShell, <code>curl</code> is a different command (an alias for <code>Invoke-WebRequest</code>); type <code>curl.exe</code> instead. Also turn off <strong>Split across multiple lines</strong>, since PowerShell doesn't use <code>\</code> to continue lines. Commands are easiest to use in Git Bash or WSL.</dd>
+          <dt>Requests need to go through a proxy</dt>
+          <dd>curl uses the standard proxy environment variables, such as <code>HTTPS_PROXY</code> and <code>NO_PROXY</code>. Set them for your session before starting Kurly, and its requests use them too.</dd>
+          <dt>Kurly says the library was damaged</dt>
+          <dd>Kurly couldn't read <code>library.json</code>, so it started a new library and kept the old file next to it as <code>library.json.corrupt-…</code>, so nothing is lost.</dd>
+          <dt>"This plugin supports grabbing the mouse only for popup windows"</dt>
+          <dd>A harmless note Qt prints in the terminal on Wayland desktops. Nothing is wrong.</dd>
+        </dl>
+        <p>Something else? <a href="https://github.com/Bekind-Labs/kurly/issues">Report a problem on GitHub</a>.</p>
+
+        <h2 id="privacy">Privacy</h2>
+        <p>Kurly has no account and no tracking. It only connects to the network when you run a request, and then only to the address in your request, through your own curl. Your requests stay in the library file on your computer.</p>

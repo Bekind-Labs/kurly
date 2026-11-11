@@ -44,6 +44,20 @@ private slots:
                          "--data-raw '{\"a\":1}' https://example.com"));
     }
 
+    void methodIsAlwaysWhatWasChosen()
+    {
+        CurlOptions o;
+        o.url = "https://example.com";
+        o.body = "a=1";
+        o.method = "GET"; // a body alone would make curl send POST
+        QCOMPARE(CurlCommand::build(o), QString("curl -X GET --data-raw a=1 https://example.com"));
+        o.method = "PUT";
+        QCOMPARE(CurlCommand::build(o), QString("curl -X PUT --data-raw a=1 https://example.com"));
+        o.body.clear();
+        o.method = "POST"; // without a body, POST must be explicit
+        QCOMPARE(CurlCommand::build(o), QString("curl -X POST https://example.com"));
+    }
+
     void putAndHead()
     {
         CurlOptions o;

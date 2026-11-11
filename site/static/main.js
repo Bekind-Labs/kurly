@@ -50,7 +50,48 @@
       });
     });
     setUpDownloads();
+    setUpTableOfContents();
   });
+
+  // ---- Guide: table of contents ------------------------------------------------
+
+  function setUpTableOfContents() {
+    var toc = document.querySelector(".toc");
+    if (!toc) return;
+    var details = toc.querySelector("details");
+    // On narrow screens the contents start collapsed above the article.
+    if (details && window.matchMedia && window.matchMedia("(max-width: 900px)").matches)
+      details.open = false;
+    var links = {};
+    toc.querySelectorAll("a[href^='#']").forEach(function (a) {
+      links[a.getAttribute("href").slice(1)] = a;
+    });
+    var headings = Array.prototype.filter.call(
+      document.querySelectorAll(".prose h2[id], .prose h3[id]"),
+      function (h) { return links[h.id]; });
+    // Highlight the last heading that has scrolled past the top area.
+    function update() {
+      var current = headings[0];
+      headings.forEach(function (h) {
+        if (h.getBoundingClientRect().top < 140) current = h;
+      });
+      // At the very bottom, the last sections may never reach the top.
+      var root = document.documentElement;
+      if (window.innerHeight + window.scrollY >= root.scrollHeight - 2)
+        current = headings[headings.length - 1];
+      Object.keys(links).forEach(function (id) {
+        if (current && id === current.id) links[id].setAttribute("aria-current", "true");
+        else links[id].removeAttribute("aria-current");
+      });
+    }
+    var pending = false;
+    window.addEventListener("scroll", function () {
+      if (pending) return;
+      pending = true;
+      window.requestAnimationFrame(function () { pending = false; update(); });
+    }, { passive: true });
+    update();
+  }
 
   // ---- Downloads -----------------------------------------------------------
 

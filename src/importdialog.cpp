@@ -1,6 +1,7 @@
 #include "importdialog.h"
 
 #include "spacing.h"
+#include "themecolors.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -37,7 +38,6 @@ ImportDialog::ImportDialog(QWidget *parent)
     m_error = new QLabel;
     m_error->setObjectName(QStringLiteral("error"));
     m_error->setWordWrap(true);
-    m_error->setStyleSheet(QStringLiteral("color: #c62828;"));
     m_error->hide();
     layout->addWidget(m_error);
 
@@ -82,6 +82,7 @@ void ImportDialog::accept()
         break;
     }
     m_error->setText(message);
+    m_error->setStyleSheet(ThemeColors::textColorStyle(ThemeColors::error(this)));
     m_error->show();
     m_input->setFocus();
 }

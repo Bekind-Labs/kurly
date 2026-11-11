@@ -69,6 +69,19 @@ private slots:
         QVERIFY(error(d)->isHidden());
     }
 
+    void errorColorFollowsTheTheme()
+    {
+        ImportDialog d;
+        d.show();
+        d.accept(); // empty: shows an error
+        QCOMPARE(error(d)->styleSheet(), QString("color: #c62828;"));
+        QPalette dark = d.palette();
+        dark.setColor(QPalette::Window, QColor(50, 50, 50));
+        d.setPalette(dark);
+        d.accept();
+        QCOMPARE(error(d)->styleSheet(), QString("color: #ef9a9a;"));
+    }
+
     void successAccepts()
     {
         ImportDialog d;

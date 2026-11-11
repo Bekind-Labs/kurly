@@ -42,7 +42,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        # The screenshot tool is Unix-only; build it on Linux so it keeps compiling.
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ runner.os == 'Linux' && '-DKURLY_BUILD_SCREENSHOT_TOOL=ON' || '' }}
 
       - name: Build
         run: cmake --build build --config Release --parallel

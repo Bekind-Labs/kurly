@@ -1,9 +1,7 @@
 #pragma once
 
-#include <QElapsedTimer>
+#include <QHash>
 #include <QMainWindow>
-#include <QProcess>
-#include <QStringDecoder>
 #include <QTranslator>
 
 class QCheckBox;
@@ -18,20 +16,28 @@ class QTableWidget;
 class QTimer;
 class QScrollArea;
 struct CurlOptions;
+class LibraryPanel;
+class RequestRunner;
+class RequestStore;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    // libraryPath: where the request library is kept; empty for the default
+    // location (RequestStore::defaultPath()).
+    explicit MainWindow(QWidget *parent = nullptr, const QString &libraryPath = QString());
     ~MainWindow() override;
+
+    RequestStore *store() const { return m_store; }
+    LibraryPanel *library() const { return m_library; }
 
     // The request currently described by the form, and loading one into it.
     CurlOptions currentOptions() const;
     void loadOptions(const CurlOptions &o);
 
     // The curl executable used by Run. Defaults to "curl" on the PATH.
-    void setCurlProgram(const QString &program) { m_curlProgram = program; }
+    void setCurlProgram(const QString &program);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -43,37 +49,33 @@ private slots:
     void removeSelectedHeaders();
     void setLanguage(const QString &code);
     void runOrStop();
-    void readStdout();
-    void readStderr();
     void renderResponse();
-    void processFinished(int exitCode, QProcess::ExitStatus status);
-    void processError(QProcess::ProcessError error);
     void importCommand();
+    void showRequest(const QString &id);
+    void setLibraryVisible(bool visible);
+    void newRequest();
 
 private:
     void buildUi();
     void retranslateUi();
-    void appendOutput(const QString &text, bool isStdout);
     void updateRunState();
+    // The runner for a request; created on first use when `create` is set.
+    RequestRunner *runnerFor(const QString &id, bool create = false);
+    RequestRunner *currentRunner() const { return m_runners.value(m_shownId); }
+    void pruneRunners();
+    void reportLibraryProblem(int loadResult);
     QString exitCodeHint(int code) const;
 
-    enum class RunState { Idle, Running, Finished, Crashed, NotFound };
-    RunState m_runState = RunState::Idle;
-    int m_exitCode = 0;
-    qint64 m_elapsedMs = 0;
-    // curl's output: everything in arrival order (for the raw view), plus
-    // stdout (the response, for formatting) and stderr (curl's messages).
-    QString m_rawOutput;
-    QString m_stdout;
-    QString m_stderr;
-    bool m_truncated = false;
+    // The request library, and one runner (with its response) per request.
+    RequestStore *m_store = nullptr;
+    LibraryPanel *m_library = nullptr;
+    QPushButton *m_libraryToggle = nullptr;
+    QHash<QString, RequestRunner *> m_runners;
+    QString m_shownId;      // the request shown in the form
+    bool m_loading = false; // filling the form from the library: don't write back
+    bool m_saveFailureShown = false;
     QTimer *m_renderTimer = nullptr;
-    bool m_stopRequested = false;
-    QProcess *m_process = nullptr;
     QString m_curlProgram = QStringLiteral("curl");
-    QElapsedTimer m_elapsed;
-    QStringDecoder m_outDecoder{QStringDecoder::Utf8};
-    QStringDecoder m_errDecoder{QStringDecoder::Utf8};
 
     QTranslator m_translator;   // Kurly's own strings
     QTranslator m_qtTranslator; // Qt's built-in strings (OK buttons, context menus)
