@@ -631,6 +631,22 @@ private slots:
         QCOMPARE(find<QPushButton>("run")->text(), QString("Run"));
     }
 
+    void statusColorsFollowTheTheme()
+    {
+        w->setCurlProgram("kurly-no-such-curl-program");
+        find<QLineEdit>("url")->setText("https://x.test");
+        find<QPushButton>("run")->click();
+        QTRY_VERIFY(status().contains("Could not start curl"));
+        auto *label = find<QLabel>("status");
+        QCOMPARE(label->styleSheet(), QString("color: #c62828;")); // dark red on light
+
+        // Switching to a dark theme (as the system does) lightens it.
+        QPalette dark = w->palette();
+        dark.setColor(QPalette::Window, QColor(50, 50, 50));
+        w->setPalette(dark);
+        QCOMPARE(label->styleSheet(), QString("color: #ef9a9a;"));
+    }
+
     void statusIsRetranslated()
     {
         w->setCurlProgram("kurly-no-such-curl-program");

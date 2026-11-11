@@ -36,6 +36,7 @@ add_library(kurly_gui STATIC
     src/librarypanel.cpp src/librarypanel.h
     src/spacing.h
 )
+    src/themecolors.h
 target_link_libraries(kurly_gui PUBLIC kurly_core Qt6::Widgets)
 
 # Source strings are English; Japanese is provided as a translation.

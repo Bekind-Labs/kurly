@@ -8,6 +8,7 @@
 #include "requeststore.h"
 #include "responseformatter.h"
 #include "spacing.h"
+#include "themecolors.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -525,6 +526,8 @@ void MainWindow::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::LanguageChange && m_copy)
         retranslateUi();
+    if (event->type() == QEvent::PaletteChange)
+        updateRunState(); // the system switched between light and dark
     QMainWindow::changeEvent(event);
 }
 
@@ -723,28 +726,27 @@ void MainWindow::updateRunState()
         const QString time = tr("%1 ms").arg(r->elapsedMs());
         if (r->exitCode() == 0) {
             text = tr("Done · %1").arg(time);
-            color = QStringLiteral("#2e7d32");
+            color = ThemeColors::success(this);
         } else {
             const QString hint = exitCodeHint(r->exitCode());
             text = hint.isEmpty() ? tr("curl exited with code %1 · %2").arg(r->exitCode()).arg(time)
                                   : tr("curl exited with code %1 (%2) · %3")
                                         .arg(r->exitCode()).arg(hint, time);
-            color = QStringLiteral("#c62828");
+            color = ThemeColors::error(this);
         }
         break;
     }
     case RequestRunner::State::Crashed:
         text = r->stopRequested() ? tr("Stopped") : tr("curl stopped unexpectedly");
-        color = r->stopRequested() ? QString() : QStringLiteral("#c62828");
+        color = r->stopRequested() ? QString() : ThemeColors::error(this);
         break;
     case RequestRunner::State::NotFound:
         text = tr("Could not start curl. Is it installed and on your PATH?");
-        color = QStringLiteral("#c62828");
+        color = ThemeColors::error(this);
         break;
     }
     m_status->setText(text);
-    m_status->setStyleSheet(color.isEmpty() ? QString()
-                                            : QStringLiteral("color: %1;").arg(color));
+    m_status->setStyleSheet(ThemeColors::textColorStyle(color));
 }
 
 // ---- Importing an existing command -------------------------------------------
