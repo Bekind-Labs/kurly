@@ -95,7 +95,10 @@
           <li>Press <strong>Run</strong> (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>). The response appears below the command, and the status line shows <strong>Done</strong> and how long it took.</li>
           <li>Add a header, for example <code>X-Hello</code> with the value <code>world</code>, and run it again: httpbin's reply now includes your header.</li>
         </ol>
-        <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="The Kurly window with a GET request filled in on the left, the curl command at the top right and the formatted JSON response below it." loading="lazy">
+        <picture>
+          <source srcset="{{root}}assets/screenshot-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="The Kurly window with a GET request filled in on the left, the curl command at the top right and the formatted JSON response below it." loading="lazy">
+        </picture>
 
         <h2 id="using-kurly">Using Kurly</h2>
         <h3 id="the-window">The window</h3>
@@ -105,7 +108,10 @@
           <li><strong>The form</strong> (middle): everything about the request. It scrolls when the window is small.</li>
           <li><strong>Command and response</strong> (right): the curl command at the top, and the response of the last run below it.</li>
         </ul>
-        <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="The Kurly window with the library open: a list of five saved requests on the left, the form in the middle and the command and response on the right." loading="lazy">
+        <picture>
+          <source srcset="{{root}}assets/library-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="The Kurly window with the library open: a list of five saved requests on the left, the form in the middle and the command and response on the right." loading="lazy">
+        </picture>
 
         <h3 id="building">Building a request</h3>
         <ul>

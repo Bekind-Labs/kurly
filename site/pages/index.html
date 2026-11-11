@@ -20,8 +20,11 @@
       <div class="container">
         <figure class="app-window">
           <div class="app-window-bar" aria-hidden="true"><span></span><span></span><span></span><b>Kurly</b></div>
-          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440"
+          <picture>
+            <source srcset="{{root}}assets/screenshot-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+            <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440"
                alt="{{screenshot_alt}}">
+          </picture>
         </figure>
       </div>
     </section>

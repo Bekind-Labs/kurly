@@ -222,8 +222,26 @@ To build and preview it locally:
 python3 site/build.py && python3 -m http.server -d site/_site 8000
 ```
 
-Then open <http://localhost:8000>. After changing the headline or the
-screenshots, regenerate the social preview images with
+Then open <http://localhost:8000>.
+
+**Screenshots.** Every screenshot comes in a light and a dark version, and
+the site shows the one matching the visitor's theme. After changing the
+interface, retake them all (both themes, both languages, with and without the
+library) with the screenshot tool, which drives Kurly's real window with a
+stand-in curl (Linux/macOS):
+
+```bash
+cmake -S . -B build -DKURLY_BUILD_SCREENSHOT_TOOL=ON && cmake --build build --target kurly-screenshots
+```
+
+```bash
+QT_QPA_PLATFORM=offscreen QT_SCALE_FACTOR=2 ./build/tools/screenshots/kurly-screenshots shots
+```
+
+Convert them into `site/static/assets/` as `screenshot-<lang>[-dark].webp`
+(from `main-*`) and `library-<lang>[-dark].webp` (from `library-*`), for
+example with `convert shots/main-en-dark.png -quality 88 site/static/assets/screenshot-en-dark.webp`.
+Then regenerate the social preview images with
 `node site/tools/make-og-images.js` (needs Playwright).
 
 ## Layout
@@ -240,6 +258,7 @@ screenshots, regenerate the social preview images with
 - `site/` – the website (see above)
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)
+- `tools/screenshots/` – the tool that takes the website's screenshots
 
 ## License
 

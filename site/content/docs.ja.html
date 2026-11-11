@@ -95,7 +95,10 @@
           <li><strong>「実行」</strong>（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Return</kbd>）を押します。コマンドの下にレスポンスが表示され、状態欄には<strong>「完了」</strong>とかかった時間が表示されます。</li>
           <li>ヘッダーを追加して（たとえば名前<code>X-Hello</code>、値<code>world</code>）もう一度実行すると、httpbinの返答に追加したヘッダーが含まれます。</li>
         </ol>
-        <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="Kurlyのウィンドウ。左側にGETリクエストを入力したフォーム、右上にcurlコマンド、その下に整形されたJSONレスポンスが表示されています。" loading="lazy">
+        <picture>
+          <source srcset="{{root}}assets/screenshot-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/screenshot-{{lang}}.webp" width="2240" height="1440" alt="Kurlyのウィンドウ。左側にGETリクエストを入力したフォーム、右上にcurlコマンド、その下に整形されたJSONレスポンスが表示されています。" loading="lazy">
+        </picture>
 
         <h2 id="using-kurly">Kurlyの使い方</h2>
         <h3 id="the-window">ウィンドウの構成</h3>
@@ -105,7 +108,10 @@
           <li><strong>フォーム</strong>（中央）：リクエストのすべての設定です。ウィンドウが小さいときはスクロールします。</li>
           <li><strong>コマンドとレスポンス</strong>（右側）：上にcurlコマンド、下に最後に実行したときのレスポンスが表示されます。</li>
         </ul>
-        <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="ライブラリを開いたKurlyのウィンドウ。左側に保存済みの5つのリクエスト、中央にフォーム、右側にコマンドとレスポンスが表示されています。" loading="lazy">
+        <picture>
+          <source srcset="{{root}}assets/library-{{lang}}-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="{{root}}assets/library-{{lang}}.webp" width="2800" height="1500" alt="ライブラリを開いたKurlyのウィンドウ。左側に保存済みの5つのリクエスト、中央にフォーム、右側にコマンドとレスポンスが表示されています。" loading="lazy">
+        </picture>
 
         <h3 id="building">リクエストの作成</h3>
         <ul>

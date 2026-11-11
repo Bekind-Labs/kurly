@@ -330,3 +330,6 @@ kbd {
   }
   .toc details[open] summary::after { transform: translateY(-50%) rotate(90deg); }
 }
+
+/* Screenshots come in light and dark versions (<picture>). */
+picture { display: block; }
