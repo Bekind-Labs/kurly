@@ -14,6 +14,15 @@ OUT=$(realpath -m "${2:-$ROOT/dist}")
 VERSION=$(sed -n 's/^project(kurly VERSION \([0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt")
 ARCH=$(uname -m)
 
+# Refuse to package a tagged commit whose version doesn't match its tag
+# (e.g. a v0.2.0 tag on a commit that still says 0.1.0).
+TAG=$(git -C "$ROOT" describe --tags --exact-match 2>/dev/null || true)
+if [[ "$TAG" == v* && "$TAG" != "v$VERSION" ]]; then
+    echo "error: this commit is tagged $TAG, but CMakeLists.txt says version $VERSION." >&2
+    echo "       Check out the commit that sets the version, or fix the tag." >&2
+    exit 1
+fi
+
 # linuxdeploy only publishes rolling "continuous" builds; override these to
 # pin a specific copy. Their checksums are printed below for traceability.
 LINUXDEPLOY_URL=${LINUXDEPLOY_URL:-https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$ARCH.AppImage}

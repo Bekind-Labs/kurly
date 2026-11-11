@@ -24,6 +24,15 @@ BUILD="${1:-$ROOT/build-release}"
 OUT="${2:-$ROOT/dist}"
 VERSION=$(sed -n 's/^project(kurly VERSION \([0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt")
 
+# Refuse to package a tagged commit whose version doesn't match its tag
+# (e.g. a v0.2.0 tag on a commit that still says 0.1.0).
+TAG=$(git -C "$ROOT" describe --tags --exact-match 2>/dev/null || true)
+if [[ "$TAG" == v* && "$TAG" != "v$VERSION" ]]; then
+    echo "error: this commit is tagged $TAG, but CMakeLists.txt says version $VERSION." >&2
+    echo "       Check out the commit that sets the version, or fix the tag." >&2
+    exit 1
+fi
+
 QT_DIR=${QT_DIR:-${QT_ROOT_DIR:-$(brew --prefix qt 2>/dev/null || true)}}
 if [[ -z "$QT_DIR" || ! -x "$QT_DIR/bin/macdeployqt" ]]; then
     echo "error: Qt not found; set QT_DIR to your Qt prefix (the folder containing bin/macdeployqt)" >&2
