@@ -29,6 +29,9 @@ public:
     ~RequestRunner() override; // kills a running curl
 
     void setProgram(const QString &program) { m_program = program; }
+    // The full path of the curl the last run used, e.g. "/usr/bin/curl";
+    // empty if it couldn't be found.
+    QString resolvedProgram() const { return m_resolvedProgram; }
 
     // Starts curl with these arguments (as from CurlCommand::arguments()).
     // Returns false if they're empty or a run is already in progress.
@@ -58,6 +61,7 @@ private:
     void failedToStart(QProcess::ProcessError error);
 
     QString m_program = QStringLiteral("curl");
+    QString m_resolvedProgram;
     QProcess *m_process = nullptr;
     State m_state = State::Idle;
     int m_exitCode = 0;

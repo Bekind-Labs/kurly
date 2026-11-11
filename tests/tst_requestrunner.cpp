@@ -48,6 +48,7 @@ private slots:
         QCOMPARE(r.output().size(), r.standardOutput().size() + r.standardError().size());
         QVERIFY(!r.isTruncated());
         QCOMPARE(state.count(), 2); // started, finished
+        QCOMPARE(r.resolvedProgram(), QStandardPaths::findExecutable("curl"));
 
         // A second run starts from scratch.
         QVERIFY(r.start({server.url("/y")}));
@@ -76,6 +77,7 @@ private slots:
         QVERIFY(r.start({"https://x.test"}));
         QTRY_COMPARE(r.state(), RequestRunner::State::NotFound);
         QVERIFY(!r.isRunning());
+        QVERIFY(r.resolvedProgram().isEmpty());
     }
 
     void destroyingWhileRunning()

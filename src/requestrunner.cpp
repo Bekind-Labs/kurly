@@ -1,6 +1,8 @@
 #include "requestrunner.h"
 
 #include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
 
 RequestRunner::RequestRunner(QObject *parent)
     : QObject(parent)
@@ -34,6 +36,11 @@ bool RequestRunner::start(QStringList arguments)
     m_elapsedMs = 0;
     m_outDecoder.resetState();
     m_errDecoder.resetState();
+
+    // Record which curl this is, for error reports ("Ran /usr/bin/curl").
+    m_resolvedProgram = QFileInfo(m_program).isAbsolute()
+                            ? m_program
+                            : QStandardPaths::findExecutable(m_program);
 
     m_process = new QProcess(this);
     // GUI apps often start in "/"; use somewhere writable for --output.

@@ -737,7 +737,13 @@ void MainWindow::updateRunState()
         break;
     }
     case RequestRunner::State::Crashed:
-        text = r->stopRequested() ? tr("Stopped") : tr("curl stopped unexpectedly");
+        if (r->stopRequested())
+            text = tr("Stopped");
+        else if (!r->resolvedProgram().isEmpty())
+            text = tr("curl (%1) stopped unexpectedly")
+                       .arg(QDir::toNativeSeparators(r->resolvedProgram()));
+        else
+            text = tr("curl stopped unexpectedly");
         color = r->stopRequested() ? QString() : ThemeColors::error(this);
         break;
     case RequestRunner::State::NotFound:
@@ -747,6 +753,10 @@ void MainWindow::updateRunState()
     }
     m_status->setText(text);
     m_status->setStyleSheet(ThemeColors::textColorStyle(color));
+    // Which curl ran, for when something goes wrong.
+    m_status->setToolTip(r && !r->resolvedProgram().isEmpty()
+                             ? tr("Ran %1").arg(QDir::toNativeSeparators(r->resolvedProgram()))
+                             : QString());
 }
 
 // ---- Importing an existing command -------------------------------------------

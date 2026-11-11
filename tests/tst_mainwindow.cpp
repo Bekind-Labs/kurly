@@ -387,6 +387,29 @@ private slots:
         QVERIFY(!response().contains("% Total"));
     }
 
+    void crashNamesTheCurlThatRan()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("Uses a shell script as a stand-in for curl");
+#else
+        // A "curl" that kills itself, as a crashing curl would.
+        QTemporaryDir dir;
+        const QString fake = dir.filePath("curl");
+        QFile f(fake);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("#!/bin/sh\nkill -SEGV $$\n");
+        f.close();
+        f.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+
+        w->setCurlProgram(fake);
+        find<QLineEdit>("url")->setText("https://x.test");
+        find<QPushButton>("run")->click();
+        QTRY_VERIFY_WITH_TIMEOUT(status().contains("stopped unexpectedly"), 10000);
+        QCOMPARE(status(), QString("curl (%1) stopped unexpectedly").arg(fake));
+        QCOMPARE(find<QLabel>("status")->toolTip(), QString("Ran %1").arg(fake));
+#endif
+    }
+
     void runShortcut()
     {
         if (!haveCurl())

@@ -19,8 +19,8 @@ that new (glibc 2.35+).
 ## Making a release
 
 1. Update `project(kurly VERSION x.y.z)` in `CMakeLists.txt` and `pkgver` in
-   `packaging/arch/PKGBUILD` (resetting `pkgrel` to 1), commit, and merge to
-   `main`.
+   `packaging/arch/PKGBUILD` (resetting `pkgrel` to 1), add the release to
+   `CHANGELOG.md`, commit, and merge to `main`.
 2. Tag the commit and push the tag:
 
    ```bash
@@ -30,8 +30,8 @@ that new (glibc 2.35+).
 3. The **Release** workflow builds and smoke-tests every package, then creates
    a **draft** release with them and a `SHA256SUMS.txt`. The tag must match
    the version in `CMakeLists.txt`, or the workflow stops.
-4. Review the draft on GitHub (edit the generated notes if you like) and
-   publish it.
+4. Review the draft on GitHub, replace the generated notes with the
+   release's section from `CHANGELOG.md`, and publish it.
 5. Update the PKGBUILD's checksum for the new source tarball: on Arch, run
    `updpkgsums` in `packaging/arch` and commit the result (and, once Kurly is
    on the AUR, push the PKGBUILD and a regenerated `.SRCINFO` there too).
