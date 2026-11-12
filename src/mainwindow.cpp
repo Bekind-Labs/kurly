@@ -364,6 +364,10 @@ void MainWindow::buildUi()
     // dividers use the style's native width.
     setCentralWidget(split);
 
+    Layout::lineUp({m_libraryToggle, m_import});
+    Layout::lineUp({m_copy, m_run});
+    Layout::lineUp({m_addHeader, m_removeHeader});
+
     // Stable names for tests and accessibility tooling.
     m_url->setObjectName(QStringLiteral("url"));
     m_method->setObjectName(QStringLiteral("method"));
