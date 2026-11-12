@@ -120,7 +120,7 @@ On Debian/Ubuntu:
 sudo apt install cmake g++ qt6-base-dev qt6-tools-dev qt6-l10n-tools curl
 ```
 
-On Arch Linux (add `qt6-wayland` for native Wayland support):
+On Arch Linux:
 
 ```bash
 sudo pacman -S --needed base-devel cmake qt6-base qt6-tools curl

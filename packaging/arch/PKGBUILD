@@ -1,7 +1,7 @@
 # Maintainer: Kaylee Kobayashi kaylee@bekindlabs.com
 pkgname=kurly
 pkgver=0.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Friendly Qt app for building, importing and running curl commands'
 arch=('x86_64' 'aarch64')
 url='https://github.com/Bekind-Labs/kurly'
@@ -9,7 +9,6 @@ license=('MIT')
 depends=('qt6-base' 'curl' 'gcc-libs' 'glibc' 'hicolor-icon-theme')
 # qt6-translations: Qt's own Japanese strings are embedded at build time.
 makedepends=('cmake' 'qt6-tools' 'qt6-translations')
-optdepends=('qt6-wayland: native Wayland support')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP') # replace by running `updpkgsums` once the repository is public
 
