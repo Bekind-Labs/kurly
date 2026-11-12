@@ -90,6 +90,39 @@ jobs:
           path: dist/*.AppImage
           if-no-files-found: error
 
+  flatpak:
+    name: Linux Flatpak
+    needs: version
+    runs-on: ubuntu-24.04
+    container:
+      # Flathub's CI image, with the KDE runtime the manifest uses.
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/flatpak/io.github.Bekind_Labs.Kurly.yml
+          bundle: Kurly-${{ needs.version.outputs.version }}-x86_64.flatpak
+          cache-key: flatpak-builder-${{ github.sha }}
+          upload-artifact: false
+      - name: Smoke test (curl inside the sandbox; starts and keeps running)
+        run: |
+          flatpak install --user --noninteractive -y Kurly-*.flatpak
+          # Kurly runs curl from inside its sandbox, so the runtime must have it.
+          flatpak run --command=sh io.github.Bekind_Labs.Kurly -c 'command -v curl && curl --version | head -1' \
+            || { echo "::error::curl isn't available inside the Flatpak"; exit 1; }
+          set +e
+          timeout 10 flatpak run --env=QT_QPA_PLATFORM=offscreen io.github.Bekind_Labs.Kurly
+          status=$?
+          set -e
+          if [ "$status" -ne 124 ]; then echo "::error::App exited early with status $status"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: Kurly-*.flatpak
+          if-no-files-found: error
+
   windows:
     name: Windows zip
     needs: version
@@ -174,7 +207,7 @@ jobs:
 
   release:
     name: Draft GitHub release
-    needs: [version, linux, windows, macos]
+    needs: [version, linux, flatpak, windows, macos]
     # Publish even if the macOS job couldn't run (its .dmg can be built
     # locally with packaging/macos/make-dmg.sh and attached to the draft).
     if: >-

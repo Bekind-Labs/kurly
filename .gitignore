@@ -65,3 +65,6 @@ compile_commands.json
 /packaging/arch/*.pkg.tar.*
 /site/_site/
 /_site/
+/build-flatpak/
+/.flatpak-builder/
+*.flatpak

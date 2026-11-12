@@ -121,7 +121,7 @@
           <li><strong>ユーザー：</strong>ベーシック認証を使うサーバー向けの<code>ユーザー:パスワード</code>です。</li>
           <li><strong>ユーザーエージェント：</strong>curlが名乗る名前を置き換えます。</li>
           <li><strong>タイムアウト：</strong>何秒で打ち切るかを指定します。<strong>「なし」</strong>の場合は完了するまで待ちます。</li>
-          <li><strong>出力をファイルに保存：</strong>レスポンスのボディを画面に表示せず、ファイルに書き出します。Kurlyから実行した場合、<code>out.json</code>のような相対パスはホームフォルダーに保存されます。</li>
+          <li><strong>出力をファイルに保存：</strong>レスポンスのボディを画面に表示せず、ファイルに書き出します。Kurlyから実行した場合、<code>out.json</code>のような相対パスはホームフォルダーに保存されます（Flatpak版ではダウンロードフォルダー）。</li>
           <li><strong>オプション：</strong>よく使うcurlオプションのチェックボックスです。対応は<a href="#common-options">よく使うオプション</a>を参照してください。</li>
         </ul>
 
@@ -180,6 +180,7 @@
             <tr><td>macOS</td><td><code>~/Library/Application Support/Bekind Labs/Kurly/</code></td></tr>
             <tr><td>Windows</td><td><code>%APPDATA%\Bekind Labs\Kurly\</code></td></tr>
             <tr><td>Linux</td><td><code>~/.local/share/Bekind Labs/Kurly/</code></td></tr>
+            <tr><td>Linux（Flatpak版）</td><td><code>~/.var/app/io.github.Bekind_Labs.Kurly/data/Bekind Labs/Kurly/</code></td></tr>
           </tbody>
         </table>
         <aside class="note"><p><strong>パスワードやトークンについて：</strong><code>Authorization</code>ヘッダーや<strong>ユーザー</strong>のパスワードなど、リクエストには認証情報が含まれることがあります。これらは、あなたのユーザーアカウントだけが読めるファイルに、平文で保存されます。パソコン上のファイルに置いておきたくない秘密情報は保存しないでください。</p></aside>

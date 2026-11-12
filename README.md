@@ -60,7 +60,8 @@ Get the latest version from the
   **System Settings → Privacy & Security → Open Anyway**.
 - **Windows:** unzip and run `Kurly.exe`. If SmartScreen warns, choose
   **More info → Run anyway**.
-- **Linux:** make the `.AppImage` executable (`chmod +x Kurly-*.AppImage`) and
+- **Linux:** install the `.flatpak` with `flatpak install Kurly-*.flatpak`,
+  or make the `.AppImage` executable (`chmod +x Kurly-*.AppImage`) and
   run it. On Arch Linux you can also install it as a package; see below.
 
 See [RELEASING.md](RELEASING.md) for how releases are made.
@@ -143,6 +144,17 @@ cmake --build build
 
 To add Kurly to your desktop's app launcher (with its icon), run
 `sudo cmake --install build`.
+
+To build and install the Flatpak instead (needs `flatpak-builder` and the KDE
+runtime from Flathub):
+
+```bash
+flatpak-builder --user --install --force-clean build-flatpak packaging/flatpak/io.github.Bekind_Labs.Kurly.yml
+```
+
+Inside the Flatpak, Kurly uses the curl from KDE's Flatpak runtime, saves
+relative output paths in Downloads, and keeps its library in
+`~/.var/app/io.github.Bekind_Labs.Kurly/`.
 
 ## Tests
 
@@ -254,7 +266,7 @@ Then regenerate the social preview images with
 - `src/importdialog.*` – the import dialog
 - `src/librarypanel.*` – the library sidebar
 - `src/mainwindow.*` – the form, command/response panes, and language switching
-- `packaging/` – scripts that build the release packages
+- `packaging/` – scripts and manifests that build the release packages (AppImage, Flatpak, Windows zip, macOS dmg, Arch PKGBUILD)
 - `site/` – the website (see above)
 - `icons/` – app icon sources, generated platform icons, and the Linux `.desktop` file
 - `tests/` – unit and widget tests (see above)

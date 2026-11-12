@@ -33,6 +33,11 @@ public:
     // empty if it couldn't be found.
     QString resolvedProgram() const { return m_resolvedProgram; }
 
+    // Where curl runs, so where relative paths (e.g. "Save output to file")
+    // end up: the home folder, or Downloads inside a Flatpak, whose sandbox
+    // can only write there.
+    static QString outputDirectory();
+
     // Starts curl with these arguments (as from CurlCommand::arguments()).
     // Returns false if they're empty or a run is already in progress.
     bool start(QStringList arguments);

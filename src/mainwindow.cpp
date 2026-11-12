@@ -23,6 +23,7 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QLibraryInfo>
 #include <QLineEdit>
 #include <QLocale>
 #include <QMessageBox>
@@ -476,7 +477,8 @@ void MainWindow::retranslateUi()
     m_timeout->setSpecialValueText(tr("None"));
     m_timeout->setSuffix(tr(" s"));
     m_outputLabel->setText(tr("Save output to file:"));
-    m_output->setToolTip(tr("When run from Kurly, relative paths are saved in your home folder."));
+    m_output->setToolTip(tr("When run from Kurly, relative paths are saved in %1.")
+                             .arg(QDir::toNativeSeparators(RequestRunner::outputDirectory())));
 
     m_optionsBox->setTitle(tr("Options"));
     m_follow->setText(tr("Follow redirects"));
@@ -515,8 +517,11 @@ void MainWindow::setLanguage(const QString &code)
     if (code != QLatin1String("en")) {
         if (m_translator.load(QStringLiteral(":/i18n/kurly_%1.qm").arg(code)))
             qApp->installTranslator(&m_translator);
-        // Embedded at build time when available (see CMakeLists.txt).
-        if (m_qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1.qm").arg(code)))
+        // Embedded at build time when available (see CMakeLists.txt);
+        // otherwise Qt's own copy, e.g. a Flatpak runtime's translations.
+        if (m_qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1.qm").arg(code))
+            || m_qtTranslator.load(QStringLiteral("qtbase_%1").arg(code),
+                                   QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
             qApp->installTranslator(&m_qtTranslator);
     }
     QSettings().setValue(QStringLiteral("language"), code);
