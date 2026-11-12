@@ -12,6 +12,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 BUILD=$(realpath -m "${1:-$ROOT/build-release}")
 OUT=$(realpath -m "${2:-$ROOT/dist}")
 VERSION=$(sed -n 's/^project(kurly VERSION \([0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt")
+APP_ID=$(sed -n 's/^set(KURLY_APP_ID \([^)]*\))/\1/p' "$ROOT/CMakeLists.txt")
 ARCH=$(uname -m)
 
 # Refuse to package a tagged commit whose version doesn't match its tag
@@ -52,7 +53,7 @@ DESTDIR="$APPDIR" cmake --install "$BUILD"
 
 # appimagetool wants a PNG named after the .desktop Icon= at the top level
 # (it becomes .DirIcon, the icon file managers show for the AppImage).
-cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/kurly.png" "$APPDIR/kurly.png"
+cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
 
 echo "==> Fetching linuxdeploy"
 TOOLS="$BUILD/tools"
@@ -83,7 +84,7 @@ export APPIMAGE_EXTRACT_AND_RUN=1 # works without FUSE (e.g. in CI containers)
 export PATH="$TOOLS:$PATH"        # lets linuxdeploy find the Qt plugin
 export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
 (cd "$OUT" && "$LINUXDEPLOY" --appdir "$APPDIR" \
-    --desktop-file "$APPDIR/usr/share/applications/kurly.desktop" \
+    --desktop-file "$APPDIR/usr/share/applications/$APP_ID.desktop" \
     --plugin qt --output appimage)
 
 APPIMAGE="$OUT/Kurly-$VERSION-$ARCH.AppImage"

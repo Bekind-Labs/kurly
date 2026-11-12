@@ -51,6 +51,13 @@ jobs:
       - name: Test
         run: ctest --test-dir build --build-config Release --output-on-failure
 
+      - name: Validate Linux desktop metadata
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y appstream desktop-file-utils
+          desktop-file-validate icons/io.github.Bekind_Labs.Kurly.desktop
+          appstreamcli validate --no-net --strict icons/io.github.Bekind_Labs.Kurly.metainfo.xml
+
   coverage:
     name: Coverage (Linux)
     runs-on: ubuntu-24.04
