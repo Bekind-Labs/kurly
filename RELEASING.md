@@ -5,6 +5,7 @@
 | Platform | File | Built by |
 |---|---|---|
 | Linux (x86_64) | `Kurly-<version>-x86_64.AppImage` | `packaging/linux/make-appimage.sh` |
+| Linux (x86_64) | `Kurly-<version>-x86_64.flatpak` | `packaging/flatpak/io.github.Bekind_Labs.Kurly.yml` |
 | Windows (x64) | `Kurly-<version>-windows-x64.zip` (portable, no installer) | `packaging/windows/make-zip.ps1` |
 | macOS (Apple Silicon + Intel) | `Kurly-<version>-macOS-universal.dmg` | `packaging/macos/make-dmg.sh` |
 
@@ -12,6 +13,11 @@ Each package bundles Qt, Kurly's translations and Qt's own Japanese
 translation, so users don't need Qt installed. Kurly uses the system's
 `curl` to run requests, which macOS, Windows 10 1803+ and practically every
 Linux distribution already have.
+
+The Flatpak runs on KDE's Flatpak runtime (installed automatically with it)
+and uses the curl that runtime includes. The `.flatpak` file installs with
+`flatpak install Kurly-<version>-x86_64.flatpak`; on Flathub (below) it will
+also update automatically.
 
 The AppImage is built on Ubuntu 22.04, so it runs on distributions at least
 that new (glibc 2.35+).
@@ -81,3 +87,27 @@ The same values work as environment variables for a local
 
 Windows builds are unsigned, so SmartScreen may warn on first run ("More info →
 Run anyway") until the app builds up reputation or is signed.
+
+## Flathub
+
+Kurly's app ID is `io.github.Bekind_Labs.Kurly`. To publish on Flathub:
+
+1. Make sure `icons/io.github.Bekind_Labs.Kurly.metainfo.xml` has a
+   `<release>` entry for the version being published.
+2. Follow Flathub's submission guide: fork `flathub/flathub`, and open a pull
+   request against its `new-pr` branch adding the manifest, with the `dir`
+   source replaced by the release's git tag and commit:
+
+   ```yaml
+   sources:
+     - type: git
+       url: https://github.com/Bekind-Labs/kurly.git
+       tag: v0.2.0
+       commit: <the tag's commit hash>
+   ```
+
+3. After it's accepted, verify the app by logging in to Flathub with a GitHub
+   account that is an **admin of the Bekind-Labs organization**.
+
+Each later release is a pull request to the app's Flathub repository updating
+the tag and commit.

@@ -62,6 +62,7 @@ LibraryPanel::LibraryPanel(RequestStore *store, QWidget *parent)
     m_delete->setObjectName(QStringLiteral("libraryDelete"));
     for (auto *b : {m_new, m_duplicate, m_delete})
         buttons->addWidget(b, 1);
+    Layout::lineUp({m_new, m_duplicate, m_delete});
     layout->addLayout(buttons);
 
     // Shared by the context menu and the list's keyboard shortcuts.

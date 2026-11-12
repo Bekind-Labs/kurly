@@ -16,8 +16,9 @@ int main(int argc, char *argv[])
     QApplication::setApplicationName(QStringLiteral("Kurly"));
     QApplication::setApplicationVersion(QStringLiteral(KURLY_VERSION));
     QApplication::setOrganizationName(QStringLiteral("Bekind Labs"));
-    // Matches kurly.desktop so Linux desktops (esp. Wayland) find the icon.
-    QApplication::setDesktopFileName(QStringLiteral("kurly"));
+    // Matches the .desktop file's name, so Linux desktops (and Wayland's app
+    // ID) connect the window with its launcher and icon.
+    QApplication::setDesktopFileName(QStringLiteral(KURLY_APP_ID));
 
     QIcon icon;
     for (int size : {16, 32, 48, 64, 128, 256, 512})

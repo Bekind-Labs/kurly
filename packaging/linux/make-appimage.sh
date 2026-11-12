@@ -12,6 +12,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 BUILD=$(realpath -m "${1:-$ROOT/build-release}")
 OUT=$(realpath -m "${2:-$ROOT/dist}")
 VERSION=$(sed -n 's/^project(kurly VERSION \([0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt")
+APP_ID=$(sed -n 's/^set(KURLY_APP_ID \([^)]*\))/\1/p' "$ROOT/CMakeLists.txt")
 ARCH=$(uname -m)
 
 # Refuse to package a tagged commit whose version doesn't match its tag
@@ -52,7 +53,7 @@ DESTDIR="$APPDIR" cmake --install "$BUILD"
 
 # appimagetool wants a PNG named after the .desktop Icon= at the top level
 # (it becomes .DirIcon, the icon file managers show for the AppImage).
-cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/kurly.png" "$APPDIR/kurly.png"
+cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
 
 echo "==> Fetching linuxdeploy"
 TOOLS="$BUILD/tools"
@@ -65,13 +66,25 @@ for url in "$LINUXDEPLOY_URL" "$LINUXDEPLOY_QT_URL"; do
 done
 (cd "$TOOLS" && sha256sum ./*.AppImage)
 
+# Bundle Qt's Wayland support too, so the AppImage runs natively on Wayland
+# instead of through XWayland (blurry with fractional scaling). The plugin's
+# file names differ between Qt versions, so take whatever this Qt has.
+QT_PLATFORMS="$("$QMAKE" -query QT_INSTALL_PLUGINS)/platforms"
+WAYLAND_PLUGINS=$(cd "$QT_PLATFORMS" 2>/dev/null && find . -maxdepth 1 -name 'libqwayland*.so' -printf '%f;' | sed 's/;$//')
+if [[ -n "$WAYLAND_PLUGINS" ]]; then
+    echo "==> Including Wayland support: $WAYLAND_PLUGINS"
+    export EXTRA_PLATFORM_PLUGINS="$WAYLAND_PLUGINS"
+else
+    echo "warning: this Qt has no Wayland plugin in $QT_PLATFORMS; the AppImage will use X11 only" >&2
+fi
+
 echo "==> Bundling"
 mkdir -p "$OUT"
 export APPIMAGE_EXTRACT_AND_RUN=1 # works without FUSE (e.g. in CI containers)
 export PATH="$TOOLS:$PATH"        # lets linuxdeploy find the Qt plugin
 export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
 (cd "$OUT" && "$LINUXDEPLOY" --appdir "$APPDIR" \
-    --desktop-file "$APPDIR/usr/share/applications/kurly.desktop" \
+    --desktop-file "$APPDIR/usr/share/applications/$APP_ID.desktop" \
     --plugin qt --output appimage)
 
 APPIMAGE="$OUT/Kurly-$VERSION-$ARCH.AppImage"
@@ -79,4 +92,6 @@ if [[ ! -f "$APPIMAGE" ]]; then
     # linuxdeploy names the file after the .desktop Name; normalise it.
     mv "$OUT"/Kurly*"$ARCH".AppImage "$APPIMAGE"
 fi
+echo "==> Bundled display plugins:"
+find "$APPDIR/usr/plugins" -maxdepth 2 \( -path '*/platforms/*' -o -path '*/wayland-*' \) | sed "s|$APPDIR/usr/plugins/|    |" | sort
 echo "==> Built $APPIMAGE"

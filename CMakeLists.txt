@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 project(kurly VERSION 0.2.0 LANGUAGES CXX)
 
+# Reverse-DNS ID for Linux desktop integration (launcher, icons, AppStream,
+# Flatpak, the Wayland app ID).
+set(KURLY_APP_ID io.github.Bekind_Labs.Kurly)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -82,7 +86,8 @@ endforeach()
 
 qt_add_executable(kurly src/main.cpp)
 target_link_libraries(kurly PRIVATE kurly_gui)
-target_compile_definitions(kurly PRIVATE KURLY_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(kurly PRIVATE KURLY_VERSION="${PROJECT_VERSION}"
+                                         KURLY_APP_ID="${KURLY_APP_ID}")
 
 # Window/taskbar icon, embedded so it works on every platform.
 qt_add_resources(kurly "icons"
@@ -118,13 +123,15 @@ if(UNIX AND NOT APPLE)
     install(FILES LICENSE THIRD_PARTY_NOTICES.md licenses/LGPL-3.0.txt licenses/GPL-3.0.txt
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
     # Desktop launcher and themed icons for Linux desktops.
-    install(FILES icons/kurly.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES icons/${KURLY_APP_ID}.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES icons/${KURLY_APP_ID}.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
     install(FILES icons/kurly.svg
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+        RENAME ${KURLY_APP_ID}.svg)
     foreach(size IN LISTS KURLY_ICON_SIZES)
         install(FILES icons/png/kurly-${size}.png
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
-            RENAME kurly.png)
+            RENAME ${KURLY_APP_ID}.png)
     endforeach()
 endif()
 

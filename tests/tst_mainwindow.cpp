@@ -623,6 +623,62 @@ private slots:
         QCOMPARE(find<QPlainTextEdit>("response")->parentWidget()->layout()->contentsMargins(), padding);
     }
 
+    void buttonRowsLineUp_data()
+    {
+        QTest::addColumn<QString>("lang");
+        QTest::addColumn<QString>("font");
+        // A font without Japanese characters makes Japanese labels use a
+        // fallback font with other metrics (as when the system font isn't
+        // available), which used to give buttons in a row different heights.
+        for (const char *lang : {"en", "ja"})
+            for (const char *font : {"", "DejaVu Sans"})
+                QTest::addRow("%s, %s", lang, *font ? font : "default font") << lang << font;
+    }
+    void buttonRowsLineUp()
+    {
+        QFETCH(QString, lang);
+        QFETCH(QString, font);
+        const QFont before = QApplication::font();
+        if (!font.isEmpty())
+            QApplication::setFont(QFont(font, 10));
+        auto *language = find<QComboBox>("language");
+        language->setCurrentIndex(language->findData(lang));
+        if (!find<QPushButton>("libraryToggle")->isChecked())
+            find<QPushButton>("libraryToggle")->click();
+        QCoreApplication::processEvents();
+        const QList<QStringList> rows = {
+            {"libraryToggle", "import"},
+            {"copy", "run"},
+            {"addHeader", "removeHeader"},
+            {"libraryNew", "libraryDuplicate", "libraryDelete"},
+        };
+        // Different fonts give labels different heights (e.g. Japanese text
+        // drawn with a fallback font); simulate that on one button per row.
+        for (const QStringList &row : rows) {
+            auto *taller = w->findChild<QPushButton *>(row.last());
+            QFont f = taller->font();
+            f.setPointSizeF(f.pointSizeF() * 1.4);
+            taller->setFont(f);
+        }
+        QCoreApplication::processEvents();
+        w->resize(w->width() + 1, w->height()); // lay out again
+        QCoreApplication::processEvents();
+        for (const QStringList &row : rows) {
+            QList<int> heights, tops;
+            for (const QString &name : row) {
+                auto *b = w->findChild<QPushButton *>(name);
+                QVERIFY2(b, qPrintable(name));
+                heights << b->height();
+                tops << b->mapTo(w, QPoint()).y();
+            }
+            QVERIFY2(std::adjacent_find(heights.begin(), heights.end(), std::not_equal_to<>()) == heights.end(),
+                     qPrintable(row.join(", ") + ": heights differ"));
+            QVERIFY2(std::adjacent_find(tops.begin(), tops.end(), std::not_equal_to<>()) == tops.end(),
+                     qPrintable(row.join(", ") + ": tops differ"));
+        }
+        QApplication::setFont(before);
+    }
+
     void formScrollsWhenSmall()
     {
         auto *scroll = find<QScrollArea>("formScroll");

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata: what Linux software centers (and Flathub) show about Kurly. -->
+<component type="desktop-application">
+  <id>io.github.Bekind_Labs.Kurly</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Kurly</name>
+  <summary>Build, import and run curl commands</summary>
+  <summary xml:lang="ja">curlコマンドを作成・インポート・実行</summary>
+
+  <developer id="io.github.bekind_labs">
+    <name>Bekind Labs</name>
+  </developer>
+
+  <description>
+    <p>
+      Kurly is a friendly app for working with curl commands, the one-line
+      recipes for calling web APIs found in API documentation, bug reports and
+      browser developer tools.
+    </p>
+    <p xml:lang="ja">
+      Kurlyは、curlコマンドを手軽に扱えるアプリです。curlコマンドは、APIのドキュメントや不具合報告、ブラウザーの開発者ツールなどで見かける、Web APIを呼び出すための1行のレシピです。
+    </p>
+    <ul>
+      <li>Build a command with a form, without memorizing curl's options</li>
+      <li xml:lang="ja">curlのオプションを覚えていなくても、フォームでコマンドを作成</li>
+      <li>Import a command, for example from your browser's "Copy as cURL"</li>
+      <li xml:lang="ja">ブラウザーの「cURL としてコピー」などからコマンドをインポート</li>
+      <li>Run it and read the response, with JSON and XML neatly indented</li>
+      <li xml:lang="ja">実行してレスポンスを確認。JSONやXMLは見やすく整形</li>
+      <li>Keep the requests you use often in a library</li>
+      <li xml:lang="ja">よく使うリクエストをライブラリに保存</li>
+      <li>In English and Japanese</li>
+      <li xml:lang="ja">日本語と英語に対応</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.Bekind_Labs.Kurly.desktop</launchable>
+  <provides>
+    <binary>kurly</binary>
+  </provides>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <url type="homepage">https://bekind-labs.github.io/kurly/</url>
+  <url type="help">https://bekind-labs.github.io/kurly/docs/</url>
+  <url type="bugtracker">https://github.com/Bekind-Labs/kurly/issues</url>
+  <url type="vcs-browser">https://github.com/Bekind-Labs/kurly</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Build a request with a form and read the formatted response</caption>
+      <caption xml:lang="ja">フォームでリクエストを作成し、整形されたレスポンスを確認</caption>
+      <image>https://bekind-labs.github.io/kurly/assets/appstream/main.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Keep requests in the library</caption>
+      <caption xml:lang="ja">リクエストをライブラリに保存</caption>
+      <image>https://bekind-labs.github.io/kurly/assets/appstream/library.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#c9bfff</color>
+    <color type="primary" scheme_preference="dark">#2e2470</color>
+  </branding>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.2.0" date="2026-11-11">
+      <description>
+        <ul>
+          <li>A library of saved requests; your work is kept between sessions</li>
+          <li>Importing with the library open adds a new request</li>
+          <li>Fixed: GET with a request body was sent as POST</li>
+          <li>Fixed: status messages were hard to read in dark mode</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-11-09">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

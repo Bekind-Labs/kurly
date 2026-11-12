@@ -121,7 +121,7 @@
           <li><strong>User:</strong> <code>user:password</code> for servers that use basic authentication.</li>
           <li><strong>User agent:</strong> replaces the name curl sends to identify itself.</li>
           <li><strong>Timeout:</strong> how many seconds to wait before giving up; <strong>None</strong> waits as long as it takes.</li>
-          <li><strong>Save output to file:</strong> writes the response body to a file instead of showing it. When you run the request from Kurly, a relative path like <code>out.json</code> is saved in your home folder.</li>
+          <li><strong>Save output to file:</strong> writes the response body to a file instead of showing it. When you run the request from Kurly, a relative path like <code>out.json</code> is saved in your home folder (in the Flatpak version, in your Downloads folder).</li>
           <li><strong>Options:</strong> the checkboxes for common curl options, listed in <a href="#common-options">Common options</a>.</li>
         </ul>
 
@@ -180,6 +180,7 @@
             <tr><td>macOS</td><td><code>~/Library/Application Support/Bekind Labs/Kurly/</code></td></tr>
             <tr><td>Windows</td><td><code>%APPDATA%\Bekind Labs\Kurly\</code></td></tr>
             <tr><td>Linux</td><td><code>~/.local/share/Bekind Labs/Kurly/</code></td></tr>
+            <tr><td>Linux (Flatpak)</td><td><code>~/.var/app/io.github.Bekind_Labs.Kurly/data/Bekind Labs/Kurly/</code></td></tr>
           </tbody>
         </table>
         <aside class="note"><p><strong>About passwords and tokens:</strong> requests can contain credentials, such as an <code>Authorization</code> header or a <strong>User</strong> password. They're saved as plain text, in a file only your user account can read. Avoid saving secrets you wouldn't keep in a file on your computer.</p></aside>

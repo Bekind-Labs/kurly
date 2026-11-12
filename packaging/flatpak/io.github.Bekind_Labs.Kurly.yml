@@ -1,0 +1,44 @@
+# Flatpak manifest for Kurly. Build and install locally with:
+#
+#   flatpak-builder --user --install --force-clean build-flatpak \
+#       packaging/flatpak/io.github.Bekind_Labs.Kurly.yml
+#
+# For Flathub, replace the "dir" source below with the release's git tag and
+# commit.
+id: io.github.Bekind_Labs.Kurly
+runtime: org.kde.Platform
+runtime-version: '6.10'
+sdk: org.kde.Sdk
+command: kurly
+
+finish-args:
+  # Display: native Wayland, with X11 as a fallback.
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # Running a request sends it over the network.
+  - --share=network
+  # "Save output to file": relative paths are saved in Downloads (the only
+  # folder Kurly can write to outside its own data).
+  - --filesystem=xdg-download
+  # KDE's colors and fonts, so Kurly matches the desktop.
+  - --filesystem=xdg-config/kdeglobals:ro
+
+modules:
+  - name: kurly
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DKURLY_BUILD_TESTS=OFF
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - build
+          - build-cov
+          - build-release
+          - build-flatpak
+          - dist
+          - .flatpak-builder
+          - site/_site

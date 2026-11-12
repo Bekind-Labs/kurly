@@ -2,6 +2,8 @@
 
 #include <QSignalSpy>
 #include <QStandardPaths>
+#include <QScopeGuard>
+#include <QTemporaryDir>
 
 #include "requestrunner.h"
 #include "testserver.h"
@@ -78,6 +80,56 @@ private slots:
         QTRY_COMPARE(r.state(), RequestRunner::State::NotFound);
         QVERIFY(!r.isRunning());
         QVERIFY(r.resolvedProgram().isEmpty());
+    }
+
+    void outputDirectory()
+    {
+        // Outside a Flatpak, relative output paths go to the home folder.
+        qunsetenv("FLATPAK_ID");
+        QCOMPARE(RequestRunner::outputDirectory(), QDir::homePath());
+    }
+
+    void outputDirectoryInFlatpak()
+    {
+#ifndef Q_OS_LINUX
+        QSKIP("Flatpak and the XDG user directories are Linux-only");
+#else
+        // A temporary home whose desktop settings put Downloads somewhere known.
+        QTemporaryDir home;
+        const QByteArray oldHome = qgetenv("HOME"), oldConfig = qgetenv("XDG_CONFIG_HOME");
+        const auto restore = qScopeGuard([&] { // even if a check below fails
+            qunsetenv("FLATPAK_ID");
+            qputenv("HOME", oldHome);
+            if (oldConfig.isEmpty())
+                qunsetenv("XDG_CONFIG_HOME");
+            else
+                qputenv("XDG_CONFIG_HOME", oldConfig);
+        });
+        qputenv("HOME", home.path().toLocal8Bit());
+        qputenv("XDG_CONFIG_HOME", (home.path() + "/.config").toLocal8Bit());
+        QDir(home.path()).mkpath(".config");
+        QFile dirs(home.filePath(".config/user-dirs.dirs"));
+        QVERIFY(dirs.open(QIODevice::WriteOnly));
+        dirs.write("XDG_DOWNLOAD_DIR=\"$HOME/Kurly Downloads\"\n");
+        dirs.close();
+        const QString downloads = home.filePath("Kurly Downloads");
+
+        // Inside a Flatpak only Downloads is writable...
+        qputenv("FLATPAK_ID", "io.github.Bekind_Labs.Kurly");
+        QCOMPARE(RequestRunner::outputDirectory(), home.path()); // ...but it doesn't exist yet
+        QVERIFY(QDir().mkpath(downloads));
+        QCOMPARE(RequestRunner::outputDirectory(), downloads);
+
+        // And curl really runs there.
+        if (haveCurl()) {
+            TestServer server;
+            QVERIFY(server.listen(QHostAddress::LocalHost));
+            RequestRunner r;
+            QVERIFY(r.start({"-o", "kurly-test-output.txt", server.url()}));
+            QTRY_COMPARE_WITH_TIMEOUT(r.state(), RequestRunner::State::Finished, 10000);
+            QVERIFY(QFile::exists(downloads + "/kurly-test-output.txt"));
+        }
+#endif
     }
 
     void destroyingWhileRunning()

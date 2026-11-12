@@ -19,6 +19,17 @@ RequestRunner::~RequestRunner()
     }
 }
 
+QString RequestRunner::outputDirectory()
+{
+    if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
+        // curl can't start in a folder that doesn't exist.
+        const QString downloads = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        if (!downloads.isEmpty() && QFileInfo(downloads).isDir())
+            return downloads;
+    }
+    return QDir::homePath();
+}
+
 bool RequestRunner::start(QStringList arguments)
 {
     if (m_process || arguments.isEmpty())
@@ -44,7 +55,7 @@ bool RequestRunner::start(QStringList arguments)
 
     m_process = new QProcess(this);
     // GUI apps often start in "/"; use somewhere writable for --output.
-    m_process->setWorkingDirectory(QDir::homePath());
+    m_process->setWorkingDirectory(outputDirectory());
     connect(m_process, &QProcess::readyReadStandardOutput, this,
             [this] { read(QProcess::StandardOutput); });
     connect(m_process, &QProcess::readyReadStandardError, this,
