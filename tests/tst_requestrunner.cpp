@@ -2,6 +2,7 @@
 
 #include <QSignalSpy>
 #include <QStandardPaths>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 
 #include "requestrunner.h"
@@ -83,9 +84,27 @@ private slots:
 
     void outputDirectory()
     {
+        // Outside a Flatpak, relative output paths go to the home folder.
+        qunsetenv("FLATPAK_ID");
+        QCOMPARE(RequestRunner::outputDirectory(), QDir::homePath());
+    }
+
+    void outputDirectoryInFlatpak()
+    {
+#ifndef Q_OS_LINUX
+        QSKIP("Flatpak and the XDG user directories are Linux-only");
+#else
         // A temporary home whose desktop settings put Downloads somewhere known.
         QTemporaryDir home;
         const QByteArray oldHome = qgetenv("HOME"), oldConfig = qgetenv("XDG_CONFIG_HOME");
+        const auto restore = qScopeGuard([&] { // even if a check below fails
+            qunsetenv("FLATPAK_ID");
+            qputenv("HOME", oldHome);
+            if (oldConfig.isEmpty())
+                qunsetenv("XDG_CONFIG_HOME");
+            else
+                qputenv("XDG_CONFIG_HOME", oldConfig);
+        });
         qputenv("HOME", home.path().toLocal8Bit());
         qputenv("XDG_CONFIG_HOME", (home.path() + "/.config").toLocal8Bit());
         QDir(home.path()).mkpath(".config");
@@ -94,9 +113,6 @@ private slots:
         dirs.write("XDG_DOWNLOAD_DIR=\"$HOME/Kurly Downloads\"\n");
         dirs.close();
         const QString downloads = home.filePath("Kurly Downloads");
-
-        qunsetenv("FLATPAK_ID");
-        QCOMPARE(RequestRunner::outputDirectory(), home.path());
 
         // Inside a Flatpak only Downloads is writable...
         qputenv("FLATPAK_ID", "io.github.Bekind_Labs.Kurly");
@@ -113,13 +129,7 @@ private slots:
             QTRY_COMPARE_WITH_TIMEOUT(r.state(), RequestRunner::State::Finished, 10000);
             QVERIFY(QFile::exists(downloads + "/kurly-test-output.txt"));
         }
-
-        qunsetenv("FLATPAK_ID");
-        qputenv("HOME", oldHome);
-        if (oldConfig.isEmpty())
-            qunsetenv("XDG_CONFIG_HOME");
-        else
-            qputenv("XDG_CONFIG_HOME", oldConfig);
+#endif
     }
 
     void destroyingWhileRunning()
