@@ -65,6 +65,18 @@ for url in "$LINUXDEPLOY_URL" "$LINUXDEPLOY_QT_URL"; do
 done
 (cd "$TOOLS" && sha256sum ./*.AppImage)
 
+# Bundle Qt's Wayland support too, so the AppImage runs natively on Wayland
+# instead of through XWayland (blurry with fractional scaling). The plugin's
+# file names differ between Qt versions, so take whatever this Qt has.
+QT_PLATFORMS="$("$QMAKE" -query QT_INSTALL_PLUGINS)/platforms"
+WAYLAND_PLUGINS=$(cd "$QT_PLATFORMS" 2>/dev/null && find . -maxdepth 1 -name 'libqwayland*.so' -printf '%f;' | sed 's/;$//')
+if [[ -n "$WAYLAND_PLUGINS" ]]; then
+    echo "==> Including Wayland support: $WAYLAND_PLUGINS"
+    export EXTRA_PLATFORM_PLUGINS="$WAYLAND_PLUGINS"
+else
+    echo "warning: this Qt has no Wayland plugin in $QT_PLATFORMS; the AppImage will use X11 only" >&2
+fi
+
 echo "==> Bundling"
 mkdir -p "$OUT"
 export APPIMAGE_EXTRACT_AND_RUN=1 # works without FUSE (e.g. in CI containers)
@@ -79,4 +91,6 @@ if [[ ! -f "$APPIMAGE" ]]; then
     # linuxdeploy names the file after the .desktop Name; normalise it.
     mv "$OUT"/Kurly*"$ARCH".AppImage "$APPIMAGE"
 fi
+echo "==> Bundled display plugins:"
+find "$APPDIR/usr/plugins" -maxdepth 2 \( -path '*/platforms/*' -o -path '*/wayland-*' \) | sed "s|$APPDIR/usr/plugins/|    |" | sort
 echo "==> Built $APPIMAGE"

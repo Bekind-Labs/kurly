@@ -46,14 +46,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ env.QT_VERSION }}
+          # The newest Qt, unlike the other platforms: the AppImage's Qt reads
+          # the desktop's settings (e.g. KDE's fonts), which newer desktops
+          # write in formats older Qt versions can't parse.
+          version: '>=6.10'
           cache: true
-      - name: Install libraries the bundled Qt plugins need
+      - name: Install libraries the bundled Qt plugins need, and Weston for testing
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libegl1 libxkbcommon-x11-0 libxcb-cursor0 \
             libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 \
-            libxcb-xinerama0 libxcb-xkb1
+            libxcb-xinerama0 libxcb-xkb1 libwayland-client0 libwayland-cursor0 libwayland-egl1 weston
       - name: Build AppImage
         run: packaging/linux/make-appimage.sh build-release dist
       - name: Smoke test (starts and keeps running)
@@ -64,6 +67,23 @@ jobs:
           status=$?
           set -e
           if [[ $status -ne 124 ]]; then echo "::error::App exited early with status $status"; exit 1; fi
+      - name: Smoke test on Wayland, as a KDE desktop
+        run: |
+          # A headless Wayland compositor to run the AppImage natively on.
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg" && mkdir -p -m 700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless-backend.so --socket=wl-test --idle-time=0 &
+          for i in $(seq 50); do [[ -S "$XDG_RUNTIME_DIR/wl-test" ]] && break; sleep 0.2; done
+          # KDE's font settings, as Qt 6.12 writes them, which older Qt can't read.
+          export HOME="$RUNNER_TEMP/home" && mkdir -p "$HOME/.config"
+          printf '[General]\nfont=Noto Sans CJK JP,13,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0\nfixed=JetBrains Mono,13,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0\n' > "$HOME/.config/kdeglobals"
+          set +e
+          WAYLAND_DISPLAY=wl-test QT_QPA_PLATFORM=wayland XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6 \
+            timeout 10 dist/*.AppImage --appimage-extract-and-run 2> stderr.txt
+          status=$?
+          set -e
+          cat stderr.txt
+          if [[ $status -ne 124 ]]; then echo "::error::App didn't run natively on Wayland (status $status)"; exit 1; fi
+          if grep -q "Invalid description" stderr.txt; then echo "::error::The AppImage's Qt can't read KDE's font settings"; exit 1; fi
       - uses: actions/upload-artifact@v4
         with:
           name: linux
