@@ -12,11 +12,11 @@ class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
-class QTableWidget;
 class QTimer;
 class QScrollArea;
 struct CurlOptions;
 class LibraryPanel;
+class PairTable;
 class RequestRunner;
 class RequestStore;
 
@@ -45,8 +45,6 @@ protected:
 private slots:
     void updateCommand();
     void copyCommand();
-    void addHeaderRow(const QString &name = {}, const QString &value = {});
-    void removeSelectedHeaders();
     void setLanguage(const QString &code);
     void runOrStop();
     void renderResponse();
@@ -84,9 +82,8 @@ private:
     QLabel *m_urlLabel, *m_methodLabel;
     QLineEdit *m_url;
     QComboBox *m_method;
-    QGroupBox *m_headersBox, *m_bodyBox, *m_authBox, *m_optionsBox;
-    QTableWidget *m_headers;
-    QPushButton *m_addHeader, *m_removeHeader;
+    QGroupBox *m_headersBox, *m_cookiesBox, *m_bodyBox, *m_authBox, *m_optionsBox;
+    PairTable *m_headers, *m_cookies;
     QPushButton *m_import = nullptr;
     QPlainTextEdit *m_body;
     // Auth / misc

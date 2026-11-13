@@ -61,6 +61,7 @@
           <tbody>
             <tr><td><code>-X</code>, <code>--request</code></td><td>Sets the method</td><td>Method</td></tr>
             <tr><td><code>-H</code>, <code>--header</code></td><td>Adds a header</td><td>Headers</td></tr>
+            <tr><td><code>-b</code>, <code>--cookie</code></td><td>Sends cookies, as <code>name=value; name2=value2</code></td><td>Cookies</td></tr>
             <tr><td><code>-d</code>, <code>--data</code>, <code>--data-raw</code></td><td>Sends a body (and makes the request a <code>POST</code>)</td><td>Request body</td></tr>
             <tr><td><code>-u</code>, <code>--user</code></td><td>Logs in with <code>user:password</code> (basic authentication)</td><td>User</td></tr>
             <tr><td><code>-A</code>, <code>--user-agent</code></td><td>Sets the User-Agent header that names your client</td><td>User agent</td></tr>
@@ -117,6 +118,7 @@
         <ul>
           <li><strong>URL and Method:</strong> where to send the request and what to do (see <a href="#requests">Requests and responses</a>). Choosing <code>HEAD</code> uses curl's <code>-I</code> option.</li>
           <li><strong>Headers:</strong> one header per row, with its name and value. Click <strong>Add header</strong> for another row; select rows and click <strong>Remove selected</strong> to delete them. Rows without a name are ignored.</li>
+          <li><strong>Cookies:</strong> one cookie per row, with its name and value, added and removed the same way. Kurly sends them together with <code>-b 'name=value; name2=value2'</code>. Use this to send a login session cookie, for example.</li>
           <li><strong>Request body:</strong> the data to send. It's sent exactly as typed (<code>--data-raw</code>), so remember the matching <code>Content-Type</code> header, such as <code>application/json</code>, and a method that takes a body, usually <code>POST</code>, <code>PUT</code> or <code>PATCH</code>.</li>
           <li><strong>User:</strong> <code>user:password</code> for servers that use basic authentication.</li>
           <li><strong>User agent:</strong> replaces the name curl sends to identify itself.</li>
@@ -160,7 +162,7 @@
           <li><strong>Firefox:</strong> Copy Value → Copy as cURL.</li>
           <li><strong>Safari:</strong> Copy as cURL. (Turn on <em>Show features for web developers</em> in Safari's Advanced settings first.)</li>
         </ul>
-        <p>Both the bash format and the Windows cmd format work. A few things are adjusted on import: cookies given with <code>-b</code> become a <code>Cookie</code> header, <code>-e</code> becomes a <code>Referer</code> header, and <code>--json</code> sets the body and the JSON headers. Options Kurly can't represent, such as <code>--proxy</code> or file uploads (<code>-F</code>), are listed after the import and left out.</p>
+        <p>Both the bash format and the Windows cmd format work. A few things are adjusted on import: cookies, whether given with <code>-b</code> or as a <code>Cookie</code> header, go into the <strong>Cookies</strong> table, <code>-e</code> becomes a <code>Referer</code> header, and <code>--json</code> sets the body and the JSON headers. Options Kurly can't represent, such as <code>--proxy</code> or file uploads (<code>-F</code>), are listed after the import and left out.</p>
         <p>When the library is open, an imported command becomes a new request, unless the current one is still empty, so imports never overwrite a saved request. With the library hidden, the import replaces the current request.</p>
 
         <h3 id="library">Saving requests</h3>

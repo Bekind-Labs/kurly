@@ -22,6 +22,7 @@ class TestRequestStore : public QObject
         o.url = "https://api.example.com/v1/users?x=1";
         o.method = "POST";
         o.headers = {{"Accept", "application/json"}, {"X-名前", "値"}};
+        o.cookies = {{"session", "abc123"}, {"theme", "dark"}, {"empty", ""}};
         o.body = "{\"a\": 1}\nline two";
         o.user = "me:pw";
         o.userAgent = "UA";
@@ -95,6 +96,7 @@ private slots:
         const QJsonObject r = root.value("requests").toArray().first().toObject();
         QCOMPARE(r.value("method").toString(), QString("POST"));
         QCOMPARE(r.value("headers").toArray().size(), 2);
+        QCOMPARE(r.value("cookies").toArray().size(), 3);
         QCOMPARE(r.value("options").toObject().value("followRedirects").toBool(), true);
     }
 
@@ -261,7 +263,7 @@ private slots:
     void toleratesOddContent()
     {
         writeFile("{\"requests\": [\n"
-            "            {\"id\": \"dup\", \"url\": 5, \"method\": \"\", \"headers\": [{\"name\": \"\"}, {\"name\": \"A\", \"value\": \"1\"}], \"maxTimeSeconds\": -3},\n"
+            "            {\"id\": \"dup\", \"url\": 5, \"method\": \"\", \"headers\": [{\"name\": \"\"}, {\"name\": \"A\", \"value\": \"1\"}], \"cookies\": [{\"name\": \" \"}, {\"name\": \"c\", \"value\": 5}, 7], \"maxTimeSeconds\": -3},\n"
             "            {\"id\": \"dup\", \"name\": \"second\"},\n"
             "            \"not an object\"\n"
             "        ], \"current\": \"missing\"}");
@@ -272,6 +274,8 @@ private slots:
         QCOMPARE(r[0].options.method, QString("GET"));
         QVERIFY(r[0].options.url.isEmpty());
         QCOMPARE(r[0].options.headers.size(), 1);
+        QCOMPARE(r[0].options.cookies, (QList<QPair<QString, QString>>{{"c", ""}}));
+        QVERIFY(r[1].options.cookies.isEmpty()); // files from before cookies existed
         QCOMPARE(r[0].options.maxTimeSeconds, 0);
         QVERIFY(r[1].id != r[0].id); // duplicate id replaced
         QCOMPARE(store.currentId(), r[0].id); // missing current: first

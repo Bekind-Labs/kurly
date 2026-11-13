@@ -12,6 +12,7 @@ struct CurlOptions
     QString url;
     QString method = QStringLiteral("GET");
     QList<QPair<QString, QString>> headers; // only non-empty, enabled headers
+    QList<QPair<QString, QString>> cookies; // name/value pairs, sent with -b
     QString body;
     QString user;     // "user" or "user:password"
     QString userAgent;
@@ -38,6 +39,14 @@ namespace CurlCommand {
 // Quote a string as a single POSIX shell word. Words made only of safe
 // characters are returned unquoted.
 QString shellQuote(const QString &s);
+
+// "a=1; b=2", the form curl's -b and the Cookie header take. Cookies without
+// a name are left out.
+QString cookieString(const QList<QPair<QString, QString>> &cookies);
+
+// The reverse: splits "a=1; b=2" into name/value pairs. Returns false (and
+// leaves *out alone) if a part isn't name=value, e.g. a cookie file name.
+bool splitCookies(const QString &s, QList<QPair<QString, QString>> *out);
 
 // The arguments to pass to the curl executable (not including "curl"
 // itself), unquoted. Empty if there is no URL yet.

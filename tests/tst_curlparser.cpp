@@ -27,11 +27,31 @@ private slots:
                  (Headers{{"accept", "application/json, text/plain, */*"},
                           {"accept-language", "en-US,en;q=0.9,ja;q=0.8"},
                           {"content-type", "application/json"},
-                          {"Cookie", "session=abc123; theme=dark"},
                           {"user-agent", "Mozilla/5.0 (Macintosh)"}}));
+        QCOMPARE(r.options.cookies, (Headers{{"session", "abc123"}, {"theme", "dark"}}));
         QCOMPARE(r.options.body,
                  QString::fromUtf8("{\"name\":\"it's\",\"note\":\"line1\\nline2\",\"jp\":\"日\"}"));
         QVERIFY(r.ignored.isEmpty());
+    }
+
+    void cookies()
+    {
+        // -b/--cookie and Cookie headers (as Firefox and older Chrome copy
+        // them) all become cookies, in order.
+        auto r = CurlParser::parse("curl https://x.test -H 'Cookie: a=1; b=x=y==' "
+                                   "--cookie 'c=3' -H 'cookie:d=' -H 'X-Other: e=5'");
+        QVERIFY(r.ok());
+        QCOMPARE(r.options.cookies, (Headers{{"c", "3"}, {"a", "1"}, {"b", "x=y=="}, {"d", ""}}));
+        QCOMPARE(r.options.headers, (Headers{{"X-Other", "e=5"}}));
+        QVERIFY(r.ignored.isEmpty());
+
+        // A cookie file can't be represented; a Cookie header that isn't
+        // name=value pairs is kept as it is.
+        r = CurlParser::parse("curl https://x.test -b cookies.txt -H 'Cookie: opaque'");
+        QVERIFY(r.ok());
+        QVERIFY(r.options.cookies.isEmpty());
+        QCOMPARE(r.options.headers, (Headers{{"Cookie", "opaque"}}));
+        QCOMPARE(r.ignored, QStringList{"-b cookies.txt"});
     }
 
     void chromeCmd()
@@ -207,6 +227,7 @@ private slots:
         o.url = "https://example.com/?a=1&b=it's";
         o.method = "PATCH";
         o.headers = {{"X-One", "1"}, {"X-Two", "two words"}};
+        o.cookies = {{"sid", "a b"}, {"t", "x=1"}};
         o.body = "{\"a\": \"multi\nline 'quoted'\"}";
         o.user = "u:p";
         o.followRedirects = o.compressed = o.failOnError = true;
@@ -220,6 +241,7 @@ private slots:
                 QCOMPARE(r.options.url, o.url);
                 QCOMPARE(r.options.method, o.method);
                 QCOMPARE(r.options.headers, o.headers);
+                QCOMPARE(r.options.cookies, o.cookies);
                 QCOMPARE(r.options.body, o.body);
                 QCOMPARE(r.options.user, o.user);
                 QCOMPARE(r.options.maxTimeSeconds, o.maxTimeSeconds);

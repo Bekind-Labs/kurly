@@ -39,6 +39,7 @@ add_library(kurly_gui STATIC
     src/mainwindow.cpp src/mainwindow.h
     src/importdialog.cpp src/importdialog.h
     src/librarypanel.cpp src/librarypanel.h
+    src/pairtable.cpp src/pairtable.h
     src/spacing.h
     src/themecolors.h
 )

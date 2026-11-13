@@ -35,7 +35,9 @@ public:
         Inaccessible,  // exists but can't be opened: started empty, read-only
     };
 
-    static constexpr int kFormatVersion = 1;
+    // 2: requests have cookies. Older versions open newer files read-only, so
+    // they can't drop what they don't know about.
+    static constexpr int kFormatVersion = 2;
 
     explicit RequestStore(const QString &filePath, QObject *parent = nullptr);
     ~RequestStore() override; // saves pending changes

@@ -348,7 +348,8 @@ Result parse(const QString &command)
         else if (opt == "-A" || opt == "--user-agent") { o.userAgent = *value; return true; }
         else if (opt == "-e" || opt == "--referer") { o.headers.append({QStringLiteral("Referer"), *value}); return true; }
         else if (opt == "-b" || opt == "--cookie") {
-            if (value->contains(QLatin1Char('='))) o.headers.append({QStringLiteral("Cookie"), *value});
+            if (CurlCommand::splitCookies(*value, &o.cookies)) {}
+            else if (value->contains(QLatin1Char('='))) o.headers.append({QStringLiteral("Cookie"), *value});
             else r.ignored << opt + QLatin1Char(' ') + *value; // a cookie file
             return true;
         }
@@ -422,6 +423,15 @@ Result parse(const QString &command)
         };
         if (!has("Content-Type")) o.headers.append({QStringLiteral("Content-Type"), QStringLiteral("application/json")});
         if (!has("Accept")) o.headers.append({QStringLiteral("Accept"), QStringLiteral("application/json")});
+    }
+
+    // Browsers send cookies as a Cookie header; edit them as cookies instead.
+    for (qsizetype i = 0; i < o.headers.size();) {
+        if (o.headers.at(i).first.trimmed().compare(QLatin1String("Cookie"), Qt::CaseInsensitive) == 0
+            && CurlCommand::splitCookies(o.headers.at(i).second, &o.cookies))
+            o.headers.removeAt(i);
+        else
+            ++i;
     }
 
     if (!explicitMethod.isEmpty()) o.method = explicitMethod;
