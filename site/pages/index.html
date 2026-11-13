@@ -97,19 +97,26 @@
           <article class="download-card" data-os="mac">
             <h3>macOS</h3>
             <p class="download-req" id="mac-req">{{download_mac_req}}</p>
-            <a class="button button-primary" id="download-mac" href="{{repo_url}}/releases/latest">{{download_mac_button}}</a>
+            <div class="download-buttons">
+              <a class="button button-primary" id="download-mac" href="{{repo_url}}/releases/latest">{{download_mac_button}}</a>
+            </div>
             <p class="download-note">{{download_mac_note}}</p>
           </article>
           <article class="download-card" data-os="windows">
             <h3>Windows</h3>
             <p class="download-req">{{download_win_req}}</p>
-            <a class="button button-primary" id="download-windows" href="{{repo_url}}/releases/latest">{{download_win_button}}</a>
+            <div class="download-buttons">
+              <a class="button button-primary" id="download-windows" href="{{repo_url}}/releases/latest">{{download_win_button}}</a>
+            </div>
             <p class="download-note">{{download_win_note}}</p>
           </article>
           <article class="download-card" data-os="linux">
             <h3>Linux</h3>
             <p class="download-req">{{download_linux_req}}</p>
-            <a class="button button-primary" id="download-linux" href="{{repo_url}}/releases/latest">{{download_linux_button}}</a>
+            <div class="download-buttons">
+              <a class="button button-primary" id="download-linux" href="{{repo_url}}/releases/latest">{{download_linux_button}}</a>
+              <a class="button button-secondary" id="download-linux_appimage" href="{{repo_url}}/releases/latest">{{download_linux_appimage_button}}</a>
+            </div>
             <p class="download-note">{{download_linux_note}}</p>
           </article>
         </div>

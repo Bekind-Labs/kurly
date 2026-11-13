@@ -57,7 +57,9 @@ KURLY_UNIVERSAL=1 QT_DIR=~/Qt/6.8.3/macos packaging/macos/make-dmg.sh
 ```
 
 `KURLY_UNIVERSAL=1` needs a universal Qt from the official Qt installer. With
-Homebrew's Qt, leave it out to build for your Mac's architecture only:
+Homebrew's Qt, leave it out to build for your Mac's architecture only. The app
+then also needs the macOS version Homebrew built Qt for (the script prints it,
+e.g. "macOS 14.4 or later"); mention it in the release notes:
 
 ```bash
 packaging/macos/make-dmg.sh

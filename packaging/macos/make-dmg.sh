@@ -48,10 +48,24 @@ else
 fi
 IDENTITY=${MACOS_SIGN_IDENTITY:-}
 
-echo "==> Building Kurly $VERSION ($ARCH_NAME) with Qt from $QT_DIR"
+# The oldest macOS the app runs on: 12, or newer if this Qt needs it
+# (Homebrew's Qt is built for the macOS it was bottled on).
+min_macos() { # prints the minimum macOS a Mach-O binary was built for
+    otool -l "$1" 2>/dev/null | awk '
+        /LC_BUILD_VERSION/ { b = 1 } b && $1 == "minos" { print $2; exit }
+        /LC_VERSION_MIN_MACOSX/ { v = 1 } v && $1 == "version" { print $2; exit }'
+}
+QT_LIBS=$("$QT_DIR/bin/qmake" -query QT_INSTALL_LIBS 2>/dev/null || echo "$QT_DIR/lib")
+QT_MIN=$(min_macos "$QT_LIBS/QtCore.framework/QtCore")
+MACOS_MIN=12.0
+if [[ -n "$QT_MIN" ]] && [[ "$(printf '%s\n' "$MACOS_MIN" "$QT_MIN" | sort -V | tail -1)" == "$QT_MIN" ]]; then
+    MACOS_MIN=$QT_MIN
+fi
+
+echo "==> Building Kurly $VERSION ($ARCH_NAME, macOS $MACOS_MIN or later) with Qt from $QT_DIR"
 cmake -S "$ROOT" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DKURLY_BUILD_TESTS=OFF \
       -DKURLY_REQUIRE_QT_TRANSLATIONS=ON -DCMAKE_PREFIX_PATH="$QT_DIR" \
-      -DCMAKE_OSX_ARCHITECTURES="$ARCHS" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+      -DCMAKE_OSX_ARCHITECTURES="$ARCHS" -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_MIN"
 cmake --build "$BUILD" --parallel
 
 echo "==> Bundling Qt into the app"
@@ -64,16 +78,54 @@ mkdir -p "$STAGE/Licenses"
 for dest in "$STAGE/Kurly.app/Contents/Resources" "$STAGE/Licenses"; do
     cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$ROOT"/licenses/*.txt "$dest/"
 done
+APP="$STAGE/Kurly.app"
+# Homebrew's `qt` includes every Qt module, so macdeployqt also copies plugins
+# Kurly doesn't use (PDF and SVG images, the virtual keyboard) whose libraries
+# live elsewhere and can't be bundled. Hide its complaints about those; the
+# check below removes such plugins and fails if anything else is missing.
+deployqt() {
+    # (pipefail still stops the script if macdeployqt itself fails)
+    "$QT_DIR/bin/macdeployqt" "$APP" -always-overwrite "$@" 2>&1 \
+        | { grep -v -e 'Cannot resolve rpath' -e '^ERROR:  using QList' || true; }
+}
 if [[ -n "$IDENTITY" ]]; then
-    "$QT_DIR/bin/macdeployqt" "$STAGE/Kurly.app" -always-overwrite \
-        -codesign="$IDENTITY" -hardened-runtime -timestamp
+    deployqt -codesign="$IDENTITY" -hardened-runtime -timestamp
 else
-    "$QT_DIR/bin/macdeployqt" "$STAGE/Kurly.app" -always-overwrite
-    # Apple Silicon refuses to run unsigned code; an ad-hoc signature is enough
-    # for locally built or unnotarized apps.
-    codesign --force --deep --sign - "$STAGE/Kurly.app"
+    deployqt
 fi
-codesign --verify --deep --strict "$STAGE/Kurly.app"
+
+# Every @rpath library a bundled binary uses must be in Contents/Frameworks.
+missing_libs() {
+    otool -L "$1" | tail -n +2 | awk '$1 ~ /^@rpath\// { print $1 }' | while read -r dep; do
+        [[ -e "$APP/Contents/Frameworks/${dep#@rpath/}" ]] || echo "${dep#@rpath/}"
+    done
+}
+while IFS= read -r -d '' plugin; do
+    missing=$(missing_libs "$plugin")
+    if [[ -n "$missing" ]]; then
+        echo "    leaving out ${plugin#"$APP/Contents/PlugIns/"} (needs $(echo "$missing" | sed 's|\.framework/.*||' | sort -u | paste -sd, -))"
+        rm "$plugin"
+    fi
+done < <(find "$APP/Contents/PlugIns" -name '*.dylib' -print0)
+broken=0
+while IFS= read -r -d '' bin; do
+    file "$bin" | grep -q 'Mach-O' || continue
+    missing=$(missing_libs "$bin")
+    if [[ -n "$missing" ]]; then
+        echo "error: ${bin#"$STAGE/"} needs libraries that weren't bundled: $missing" >&2
+        broken=1
+    fi
+done < <(find "$APP/Contents/MacOS" "$APP/Contents/Frameworks" -type f -print0)
+[[ $broken == 0 ]] || exit 1
+
+# Sign again now the bundle's contents are final. Apple Silicon refuses to run
+# unsigned code; an ad-hoc signature is enough for local or unnotarized apps.
+if [[ -n "$IDENTITY" ]]; then
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+else
+    codesign --force --deep --sign - "$APP"
+fi
+codesign --verify --deep --strict "$APP"
 
 echo "==> Creating disk image"
 ln -s /Applications "$STAGE/Applications"

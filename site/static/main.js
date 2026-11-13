@@ -109,7 +109,8 @@
   var PATTERNS = {
     mac: /macOS-(universal|arm64|x86_64)\.dmg$/,
     windows: /windows-x64\.zip$/,
-    linux: /x86_64\.AppImage$/
+    linux: /x86_64\.flatpak$/,
+    linux_appimage: /x86_64\.AppImage$/
   };
 
   function setUpDownloads() {

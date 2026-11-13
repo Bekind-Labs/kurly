@@ -220,12 +220,11 @@ kbd {
 .download-card h3 { margin: 0; font-size: 1.3rem; }
 .download-card.is-recommended { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand), var(--shadow); }
 .download-req { color: var(--text-muted); margin: 0; font-size: 0.95rem; }
-.download-card .button { align-self: flex-start; }
+.download-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 /* Line up titles, requirements, buttons and notes across the cards. */
 @supports (grid-template-rows: subgrid) {
   .download-grid { grid-auto-rows: auto; }
   .download-card { display: grid; grid-row: span 4; grid-template-rows: subgrid; align-content: start; }
-  .download-card .button { justify-self: start; align-self: start; }
 }
 .download-note { margin: 4px 0 0; color: var(--text-muted); font-size: 0.9rem; }
 .download-more { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: center; margin: 32px 0 8px; font-weight: 600; }
