@@ -82,9 +82,9 @@
         <h3 id="installing">インストール</h3>
         <p><a href="{{home}}#download">ダウンロード</a>から、お使いのシステム用のKurlyを入手してください。</p>
         <ul>
-          <li><strong>macOS：</strong><code>.dmg</code>を開き、Kurlyを「アプリケーション」にドラッグします。初回は「開発元を確認できません」と表示されることがあります。その場合は<strong>「システム設定」→「プライバシーとセキュリティ」→「このまま開く」</strong>で許可してください。</li>
+          <li><strong>macOS：</strong><code>.dmg</code>を開き、Kurlyを「アプリケーション」にドラッグします（macOS 14.4以降のAppleシリコン搭載Mac）。初回は「開発元を確認できません」と表示されることがあります。その場合は<strong>「システム設定」→「プライバシーとセキュリティ」→「このまま開く」</strong>で許可してください。</li>
           <li><strong>Windows：</strong><code>.zip</code>を展開して<code>Kurly.exe</code>を実行するだけで、インストールは不要です。SmartScreenが表示された場合は<strong>「詳細情報」→「実行」</strong>を選んでください。</li>
-          <li><strong>Linux：</strong><code>chmod +x Kurly-*.AppImage</code>でAppImageに実行権限を付けて起動します。Arch Linuxでは<a href="https://github.com/Bekind-Labs/kurly#arch-linux">パッケージとしてビルド</a>することもできます。</li>
+          <li><strong>Linux：</strong>Flatpak版は<code>flatpak install --user Kurly-*.flatpak</code>でインストールします（必要なKDEランタイムはFlathubから自動で取得されます）。AppImage版は<code>chmod +x Kurly-*.AppImage</code>で実行権限を付けて起動します。Arch Linuxでは<a href="https://github.com/Bekind-Labs/kurly#arch-linux">パッケージとしてビルド</a>することもできます。</li>
         </ul>
         <p>Kurlyはリクエストの実行にシステムのcurlを使います。curlはmacOS、Windows 10（バージョン1803）以降、そしてほとんどのLinuxディストリビューションに標準で入っています。</p>
 

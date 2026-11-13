@@ -55,12 +55,12 @@ language selector in the top-right corner. The choice is remembered.
 Get the latest version from the
 [Releases page](https://github.com/Bekind-Labs/kurly/releases):
 
-- **macOS:** open the `.dmg` and drag Kurly to Applications. If macOS says it
+- **macOS** (Apple Silicon, macOS 14.4 or later): open the `.dmg` and drag Kurly to Applications. If macOS says it
   can't check the app for malicious software, allow it once under
   **System Settings → Privacy & Security → Open Anyway**.
 - **Windows:** unzip and run `Kurly.exe`. If SmartScreen warns, choose
   **More info → Run anyway**.
-- **Linux:** install the `.flatpak` with `flatpak install Kurly-*.flatpak`,
+- **Linux:** install the `.flatpak` with `flatpak install --user Kurly-*.flatpak`,
   or make the `.AppImage` executable (`chmod +x Kurly-*.AppImage`) and
   run it. On Arch Linux you can also install it as a package; see below.
 
