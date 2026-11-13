@@ -74,6 +74,15 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.3.0" date="2026-11-13">
+      <description>
+        <ul>
+          <li>Available as a Flatpak</li>
+          <li>The AppImage runs natively on Wayland and uses KDE's font settings</li>
+          <li>Fixed: buttons in the same row could have different heights</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-11-11">
       <description>
         <ul>
