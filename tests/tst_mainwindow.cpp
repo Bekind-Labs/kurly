@@ -392,12 +392,13 @@ private slots:
 #ifdef Q_OS_WIN
         QSKIP("Uses a shell script as a stand-in for curl");
 #else
-        // A "curl" that kills itself, as a crashing curl would.
+        // A "curl" that dies from a signal, as a crashing curl would. SIGKILL
+        // rather than SIGSEGV, so the system doesn't record a core dump.
         QTemporaryDir dir;
         const QString fake = dir.filePath("curl");
         QFile f(fake);
         QVERIFY(f.open(QIODevice::WriteOnly));
-        f.write("#!/bin/sh\nkill -SEGV $$\n");
+        f.write("#!/bin/sh\nkill -KILL $$\n");
         f.close();
         f.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
 
