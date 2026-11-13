@@ -102,7 +102,7 @@ Kurly's app ID is `io.github.Bekind_Labs.Kurly`. To publish on Flathub:
    sources:
      - type: git
        url: https://github.com/Bekind-Labs/kurly.git
-       tag: v0.2.0
+       tag: v0.3.0
        commit: <the tag's commit hash>
    ```
 

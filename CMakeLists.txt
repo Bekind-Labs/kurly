@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(kurly VERSION 0.2.0 LANGUAGES CXX)
+project(kurly VERSION 0.3.0 LANGUAGES CXX)
 
 # Reverse-DNS ID for Linux desktop integration (launcher, icons, AppStream,
 # Flatpak, the Wayland app ID).
