@@ -82,10 +82,16 @@ git clone https://github.com/Bekind-Labs/kurly.git
 cd kurly/packaging/arch && makepkg -si
 ```
 
-To update, pull the repository and run `makepkg -si` again. To uninstall:
+The package is called `kurly-ui`, because the AUR already has an unrelated
+`kurly` (an unrelated curl alternative). The two can't be installed together, since both
+provide a `kurly` command; if you installed this package back when it was
+called `kurly`, pacman offers to replace it.
+
+To update, pull the repository and run `makepkg -Csi` (`-C` starts from a
+clean build folder, which a new version needs). To uninstall:
 
 ```bash
-sudo pacman -R kurly
+sudo pacman -R kurly-ui
 ```
 
 ## Building
