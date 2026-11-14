@@ -61,6 +61,7 @@
           <tbody>
             <tr><td><code>-X</code>, <code>--request</code></td><td>メソッドを指定する</td><td>メソッド</td></tr>
             <tr><td><code>-H</code>, <code>--header</code></td><td>ヘッダーを追加する</td><td>ヘッダー</td></tr>
+            <tr><td><code>-b</code>, <code>--cookie</code></td><td>Cookieを送る（<code>name=value; name2=value2</code>の形式）</td><td>Cookie</td></tr>
             <tr><td><code>-d</code>, <code>--data</code>, <code>--data-raw</code></td><td>ボディを送る（リクエストは<code>POST</code>になる）</td><td>リクエストボディ</td></tr>
             <tr><td><code>-u</code>, <code>--user</code></td><td><code>ユーザー:パスワード</code>でログインする（ベーシック認証）</td><td>ユーザー</td></tr>
             <tr><td><code>-A</code>, <code>--user-agent</code></td><td>クライアントを名乗るUser-Agentヘッダーを指定する</td><td>ユーザーエージェント</td></tr>
@@ -117,6 +118,7 @@
         <ul>
           <li><strong>URLとメソッド：</strong>送り先と、何をするか（<a href="#requests">リクエストとレスポンス</a>を参照）。<code>HEAD</code>を選ぶと、curlの<code>-I</code>オプションを使います。</li>
           <li><strong>ヘッダー：</strong>1行に1つずつ、名前と値を入力します。<strong>「ヘッダーを追加」</strong>で行を追加し、行を選んで<strong>「選択を削除」</strong>で削除します。名前が空の行は無視されます。</li>
+          <li><strong>Cookie：</strong>1行に1つずつ、名前と値を入力します。追加・削除の方法はヘッダーと同じです。Kurlyはまとめて<code>-b 'name=value; name2=value2'</code>として送ります。ログイン中のセッションCookieを送りたいときなどに使います。</li>
           <li><strong>リクエストボディ：</strong>送信するデータです。入力したとおりに送られる（<code>--data-raw</code>）ので、<code>application/json</code>などの対応する<code>Content-Type</code>ヘッダーと、ボディを送るメソッド（ふつうは<code>POST</code>・<code>PUT</code>・<code>PATCH</code>）を忘れずに指定してください。</li>
           <li><strong>ユーザー：</strong>ベーシック認証を使うサーバー向けの<code>ユーザー:パスワード</code>です。</li>
           <li><strong>ユーザーエージェント：</strong>curlが名乗る名前を置き換えます。</li>
@@ -160,7 +162,7 @@
           <li><strong>Firefox：</strong>「値をコピー」→「cURL としてコピー」。</li>
           <li><strong>Safari：</strong>「cURLとしてコピー」。あらかじめSafariの設定の「詳細」で「Web開発者向け機能を表示」をオンにしてください。</li>
         </ul>
-        <p>bash形式とWindowsのcmd形式のどちらにも対応しています。インポート時に一部の内容は変換されます。<code>-b</code>で指定したCookieは<code>Cookie</code>ヘッダーに、<code>-e</code>は<code>Referer</code>ヘッダーになり、<code>--json</code>はボディとJSON用のヘッダーになります。<code>--proxy</code>やファイルのアップロード（<code>-F</code>）など、Kurlyで表せないオプションはインポート後に一覧で表示され、取り込まれません。</p>
+        <p>bash形式とWindowsのcmd形式のどちらにも対応しています。インポート時に一部の内容は変換されます。Cookieは<code>-b</code>で指定したものも<code>Cookie</code>ヘッダーのものも<strong>「Cookie」</strong>の表に、<code>-e</code>は<code>Referer</code>ヘッダーになり、<code>--json</code>はボディとJSON用のヘッダーになります。<code>--proxy</code>やファイルのアップロード（<code>-F</code>）など、Kurlyで表せないオプションはインポート後に一覧で表示され、取り込まれません。</p>
         <p>ライブラリを開いているときは、インポートしたコマンドは新しいリクエストとして追加されます（現在のリクエストが空の場合を除く）。保存済みのリクエストが上書きされることはありません。ライブラリを閉じているときは、現在のリクエストが置き換えられます。</p>
 
         <h3 id="library">リクエストの保存</h3>

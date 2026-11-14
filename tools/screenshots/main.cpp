@@ -78,6 +78,7 @@ CurlOptions userRequest()
     o.headers = {{"accept", "application/json"},
                  {"accept-language", "ja,en;q=0.9"},
                  {"authorization", "Bearer YOUR_TOKEN"}};
+    o.cookies = {{"session", "s3ss10n"}, {"theme", "dark"}};
     o.compressed = true;
     return o;
 }

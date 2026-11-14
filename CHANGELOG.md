@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+- **Cookies.** A new **Cookies** section lists the request's cookies one per
+  row, so you can add, edit and remove them without editing a long
+  `Cookie` header. They're sent with `-b 'name=value; …'`. Importing a
+  command puts its cookies there too, whether it gives them with `-b` or as
+  a `Cookie` header (as browsers do).
+- Saved requests keep their cookies. The library file format is now version
+  2; Kurly 0.3.0 and older open it read-only.
+
 ## 0.3.0
 
 ### New

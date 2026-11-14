@@ -198,12 +198,41 @@ private slots:
         QCOMPARE(command(), QString("curl https://x.test"));
     }
 
+    void cookiesAddEditRemove()
+    {
+        auto *table = find<QTableWidget>("cookies");
+        QCOMPARE(table->rowCount(), 1); // a blank row to type into
+        find<QLineEdit>("url")->setText("https://x.test");
+        table->item(0, 0)->setText("session");
+        table->item(0, 1)->setText("abc 123");
+        QCOMPARE(command(), QString("curl -b 'session=abc 123' https://x.test"));
+
+        find<QPushButton>("addCookie")->click();
+        QCOMPARE(table->rowCount(), 2);
+        QCOMPARE(table->currentRow(), 1);
+        table->item(1, 0)->setText("theme");
+        table->item(1, 1)->setText("dark");
+        QCOMPARE(command(), QString("curl -b 'session=abc 123; theme=dark' https://x.test"));
+        find<QCheckBox>("longOptions")->click();
+        QCOMPARE(command(), QString("curl --cookie 'session=abc 123; theme=dark' https://x.test"));
+        find<QCheckBox>("longOptions")->click();
+
+        table->clearSelection();
+        table->selectRow(0);
+        find<QPushButton>("removeCookie")->click();
+        QCOMPARE(command(), QString("curl -b theme=dark https://x.test"));
+        // The headers table is separate.
+        QCOMPARE(find<QTableWidget>("headers")->rowCount(), 1);
+        QCOMPARE(w->currentOptions().cookies, (QList<QPair<QString, QString>>{{"theme", "dark"}}));
+    }
+
     void loadOptionsRoundTrip()
     {
         CurlOptions o;
         o.url = "https://example.com/v1?x=1";
         o.method = "PATCH";
         o.headers = {{"Accept", "application/json"}, {"Cookie", "a=1; b=2"}};
+        o.cookies = {{"session", "abc"}, {"theme", "dark"}};
         o.body = "{\n  \"a\": 1\n}";
         o.user = "me:pw";
         o.userAgent = "UA";
@@ -222,6 +251,7 @@ private slots:
         w->loadOptions(plain);
         QCOMPARE(w->currentOptions(), plain);
         QCOMPARE(find<QTableWidget>("headers")->rowCount(), 1);
+        QCOMPARE(find<QTableWidget>("cookies")->rowCount(), 1);
     }
 
     void loadOptionsCustomMethod()
@@ -306,7 +336,7 @@ private slots:
         onNextModal<ImportDialog>([](ImportDialog *d) {
             d->findChild<QPlainTextEdit *>("input")->setPlainText(
                 "curl 'https://api.test/items' -H 'accept: application/json' "
-                "--data-raw '{\"a\":1}' --compressed");
+                "-b 'sid=1; lang=ja' --data-raw '{\"a\":1}' --compressed");
             d->accept();
         });
         find<QPushButton>("import")->click();
@@ -319,8 +349,12 @@ private slots:
         auto *table = find<QTableWidget>("headers");
         QCOMPARE(table->rowCount(), 1);
         QCOMPARE(table->item(0, 0)->text(), QString("accept"));
+        auto *cookies = find<QTableWidget>("cookies");
+        QCOMPARE(cookies->rowCount(), 2);
+        QCOMPARE(cookies->item(1, 0)->text(), QString("lang"));
+        QCOMPARE(cookies->item(1, 1)->text(), QString("ja"));
         QCOMPARE(command(), QString("curl --compressed -H 'accept: application/json' "
-                                    "--data-raw '{\"a\":1}' https://api.test/items"));
+                                    "-b 'sid=1; lang=ja' --data-raw '{\"a\":1}' https://api.test/items"));
     }
 
     void importReportsSkippedOptions()

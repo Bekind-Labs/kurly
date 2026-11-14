@@ -71,6 +71,9 @@ QJsonObject RequestStore::toJson(const CurlOptions &o)
     QJsonArray headers;
     for (const auto &h : o.headers)
         headers.append(QJsonObject{{"name", h.first}, {"value", h.second}});
+    QJsonArray cookies;
+    for (const auto &c : o.cookies)
+        cookies.append(QJsonObject{{"name", c.first}, {"value", c.second}});
     QJsonObject flags;
     for (const auto &f : kFlags)
         flags.insert(QLatin1String(f.key), o.*(f.member));
@@ -78,6 +81,7 @@ QJsonObject RequestStore::toJson(const CurlOptions &o)
         {"method", o.method},
         {"url", o.url},
         {"headers", headers},
+        {"cookies", cookies},
         {"body", o.body},
         {"user", o.user},
         {"userAgent", o.userAgent},
@@ -100,6 +104,12 @@ CurlOptions RequestStore::optionsFromJson(const QJsonObject &json)
         const QString name = h.value("name").toString();
         if (!name.trimmed().isEmpty())
             o.headers.append({name, h.value("value").toString()});
+    }
+    for (const auto &value : json.value("cookies").toArray()) {
+        const QJsonObject c = value.toObject();
+        const QString name = c.value("name").toString();
+        if (!name.trimmed().isEmpty())
+            o.cookies.append({name, c.value("value").toString()});
     }
     o.body = json.value("body").toString();
     o.user = json.value("user").toString();

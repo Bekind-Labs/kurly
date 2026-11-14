@@ -4,6 +4,7 @@
 #include "curlparser.h"
 #include "importdialog.h"
 #include "librarypanel.h"
+#include "pairtable.h"
 #include "requestrunner.h"
 #include "requeststore.h"
 #include "responseformatter.h"
@@ -21,7 +22,6 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
-#include <QHeaderView>
 #include <QLabel>
 #include <QLibraryInfo>
 #include <QLineEdit>
@@ -35,7 +35,6 @@
 #include <QShortcut>
 #include <QSpinBox>
 #include <QSplitter>
-#include <QTableWidget>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -186,21 +185,19 @@ void MainWindow::buildUi()
     auto *hl = new QVBoxLayout(m_headersBox);
     hl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
     hl->setSpacing(Spacing::small);
-    m_headers = new QTableWidget(0, 2);
-    m_headers->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_headers->verticalHeader()->hide();
-    m_headers->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_headers->setMinimumHeight(6 * Spacing::gridUnit);
-    auto *hbtn = new QHBoxLayout;
-    hbtn->setSpacing(Spacing::medium);
-    m_addHeader = new QPushButton;
-    m_removeHeader = new QPushButton;
-    hbtn->addWidget(m_addHeader);
-    hbtn->addWidget(m_removeHeader);
-    hbtn->addStretch();
+    m_headers = new PairTable(QStringLiteral("headers"), QStringLiteral("addHeader"),
+                              QStringLiteral("removeHeader"));
     hl->addWidget(m_headers);
-    hl->addLayout(hbtn);
     formLayout->addWidget(m_headersBox);
+
+    // Cookies
+    m_cookiesBox = new QGroupBox;
+    auto *cl = new QVBoxLayout(m_cookiesBox);
+    cl->setContentsMargins(Spacing::large, Spacing::large, Spacing::large, Spacing::large);
+    m_cookies = new PairTable(QStringLiteral("cookies"), QStringLiteral("addCookie"),
+                              QStringLiteral("removeCookie"));
+    cl->addWidget(m_cookies);
+    formLayout->addWidget(m_cookiesBox);
 
     // Body
     m_bodyBox = new QGroupBox;
@@ -367,14 +364,10 @@ void MainWindow::buildUi()
 
     Layout::lineUp({m_libraryToggle, m_import});
     Layout::lineUp({m_copy, m_run});
-    Layout::lineUp({m_addHeader, m_removeHeader});
 
     // Stable names for tests and accessibility tooling.
     m_url->setObjectName(QStringLiteral("url"));
     m_method->setObjectName(QStringLiteral("method"));
-    m_headers->setObjectName(QStringLiteral("headers"));
-    m_addHeader->setObjectName(QStringLiteral("addHeader"));
-    m_removeHeader->setObjectName(QStringLiteral("removeHeader"));
     m_body->setObjectName(QStringLiteral("body"));
     m_user->setObjectName(QStringLiteral("user"));
     m_agent->setObjectName(QStringLiteral("userAgent"));
@@ -405,7 +398,8 @@ void MainWindow::buildUi()
     connect(m_body, &QPlainTextEdit::textChanged, this, &MainWindow::updateCommand);
     connect(m_method, &QComboBox::currentTextChanged, this, &MainWindow::updateCommand);
     connect(m_timeout, &QSpinBox::valueChanged, this, &MainWindow::updateCommand);
-    connect(m_headers, &QTableWidget::itemChanged, this, &MainWindow::updateCommand);
+    connect(m_headers, &PairTable::changed, this, &MainWindow::updateCommand);
+    connect(m_cookies, &PairTable::changed, this, &MainWindow::updateCommand);
     for (auto *c : {m_follow, m_insecure, m_verbose, m_silent, m_include, m_fail,
                     m_compressed, m_longOpts, m_multiline})
         connect(c, &QCheckBox::toggled, this, &MainWindow::updateCommand);
@@ -417,8 +411,6 @@ void MainWindow::buildUi()
     connect(m_multiline, &QCheckBox::toggled, this,
             [](bool on) { QSettings().setValue(QStringLiteral("multiline"), on); });
 
-    connect(m_addHeader, &QPushButton::clicked, this, [this] { addHeaderRow(); });
-    connect(m_removeHeader, &QPushButton::clicked, this, &MainWindow::removeSelectedHeaders);
     connect(m_copy, &QPushButton::clicked, this, &MainWindow::copyCommand);
     connect(m_run, &QPushButton::clicked, this, &MainWindow::runOrStop);
     connect(m_import, &QPushButton::clicked, this, &MainWindow::importCommand);
@@ -440,9 +432,6 @@ void MainWindow::buildUi()
     connect(m_language, &QComboBox::currentIndexChanged, this, [this] {
         setLanguage(m_language->currentData().toString());
     });
-
-    // A starter header row for convenience.
-    addHeaderRow();
 }
 
 void MainWindow::retranslateUi()
@@ -463,9 +452,9 @@ void MainWindow::retranslateUi()
     m_methodLabel->setText(tr("Method:"));
 
     m_headersBox->setTitle(tr("Headers"));
-    m_headers->setHorizontalHeaderLabels({tr("Name"), tr("Value")});
-    m_addHeader->setText(tr("Add header"));
-    m_removeHeader->setText(tr("Remove selected"));
+    m_headers->setTexts(tr("Name"), tr("Value"), tr("Add header"), tr("Remove selected"));
+    m_cookiesBox->setTitle(tr("Cookies"));
+    m_cookies->setTexts(tr("Name"), tr("Value"), tr("Add cookie"), tr("Remove selected"));
 
     m_bodyBox->setTitle(tr("Request body"));
     m_body->setPlaceholderText(tr("Data to send (e.g. JSON)"));
@@ -540,42 +529,13 @@ void MainWindow::changeEvent(QEvent *event)
     QMainWindow::changeEvent(event);
 }
 
-void MainWindow::addHeaderRow(const QString &name, const QString &value)
-{
-    QSignalBlocker block(m_headers);
-    const int row = m_headers->rowCount();
-    m_headers->insertRow(row);
-    m_headers->setItem(row, 0, new QTableWidgetItem(name));
-    m_headers->setItem(row, 1, new QTableWidgetItem(value));
-    block.unblock();
-    m_headers->setCurrentCell(row, 0);
-    updateCommand();
-}
-
-void MainWindow::removeSelectedHeaders()
-{
-    QList<int> rows;
-    for (const auto &idx : m_headers->selectionModel()->selectedRows())
-        rows << idx.row();
-    if (rows.isEmpty() && m_headers->currentRow() >= 0)
-        rows << m_headers->currentRow();
-    std::sort(rows.begin(), rows.end(), std::greater<int>());
-    for (int r : rows)
-        m_headers->removeRow(r);
-    updateCommand();
-}
-
 CurlOptions MainWindow::currentOptions() const
 {
     CurlOptions o;
     o.url = m_url->text();
     o.method = m_method->currentText();
-    for (int r = 0; r < m_headers->rowCount(); ++r) {
-        const auto *n = m_headers->item(r, 0);
-        const auto *v = m_headers->item(r, 1);
-        if (n && !n->text().trimmed().isEmpty())
-            o.headers.append({n->text(), v ? v->text() : QString()});
-    }
+    o.headers = m_headers->pairs();
+    o.cookies = m_cookies->pairs();
     o.body = m_body->toPlainText();
     o.user = m_user->text();
     o.userAgent = m_agent->text();
@@ -801,7 +761,7 @@ void MainWindow::loadOptions(const CurlOptions &o)
     // Block per-field updates; rebuild the command once at the end.
     std::vector<QSignalBlocker> blockers;
     for (QObject *w : std::initializer_list<QObject *>{
-             m_url, m_method, m_headers, m_body, m_user, m_agent, m_output, m_timeout,
+             m_url, m_method, m_body, m_user, m_agent, m_output, m_timeout,
              m_follow, m_insecure, m_verbose, m_silent, m_include, m_fail, m_compressed})
         blockers.emplace_back(w);
 
@@ -813,13 +773,8 @@ void MainWindow::loadOptions(const CurlOptions &o)
     }
     m_method->setCurrentIndex(idx);
 
-    m_headers->setRowCount(0);
-    for (const auto &h : o.headers) {
-        const int row = m_headers->rowCount();
-        m_headers->insertRow(row);
-        m_headers->setItem(row, 0, new QTableWidgetItem(h.first));
-        m_headers->setItem(row, 1, new QTableWidgetItem(h.second));
-    }
+    m_headers->setPairs(o.headers);
+    m_cookies->setPairs(o.cookies);
 
     m_body->setPlainText(o.body);
     m_user->setText(o.user);
@@ -835,10 +790,7 @@ void MainWindow::loadOptions(const CurlOptions &o)
     m_compressed->setChecked(o.compressed);
 
     blockers.clear();
-    if (o.headers.isEmpty())
-        addHeaderRow(); // also refreshes the command
-    else
-        updateCommand();
+    updateCommand();
 }
 
 // ---- The library -----------------------------------------------------------------

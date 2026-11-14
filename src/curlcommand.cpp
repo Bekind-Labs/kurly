@@ -5,7 +5,7 @@
 
 bool CurlOptions::operator==(const CurlOptions &o) const
 {
-    return url == o.url && method == o.method && headers == o.headers && body == o.body
+    return url == o.url && method == o.method && headers == o.headers && cookies == o.cookies && body == o.body
            && user == o.user && userAgent == o.userAgent && outputFile == o.outputFile
            && maxTimeSeconds == o.maxTimeSeconds && followRedirects == o.followRedirects
            && insecure == o.insecure && verbose == o.verbose && silent == o.silent
@@ -24,6 +24,35 @@ QString shellQuote(const QString &s)
     QString q = s;
     q.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
     return QLatin1Char('\'') + q + QLatin1Char('\'');
+}
+
+QString cookieString(const QList<QPair<QString, QString>> &cookies)
+{
+    QStringList parts;
+    for (const auto &c : cookies) {
+        const QString name = c.first.trimmed();
+        if (!name.isEmpty())
+            parts << name + QLatin1Char('=') + c.second.trimmed();
+    }
+    return parts.join(QStringLiteral("; "));
+}
+
+bool splitCookies(const QString &s, QList<QPair<QString, QString>> *out)
+{
+    QList<QPair<QString, QString>> cookies;
+    for (const QString &part : s.split(QLatin1Char(';'))) {
+        const QString p = part.trimmed();
+        if (p.isEmpty())
+            continue;
+        const qsizetype eq = p.indexOf(QLatin1Char('='));
+        if (eq <= 0)
+            return false;
+        cookies.append({p.left(eq).trimmed(), p.mid(eq + 1).trimmed()});
+    }
+    if (cookies.isEmpty())
+        return false;
+    *out += cookies;
+    return true;
 }
 
 // Each group is one option plus its value(s), unquoted. Keeping groups
@@ -73,6 +102,10 @@ static QList<QStringList> argumentGroups(const CurlOptions &o)
         if (!name.isEmpty())
             g << QStringList{opt("-H", "--header"), name + QStringLiteral(": ") + h.second};
     }
+
+    const QString cookies = cookieString(o.cookies);
+    if (!cookies.isEmpty())
+        g << QStringList{opt("-b", "--cookie"), cookies};
 
     if (!o.body.isEmpty())
         g << QStringList{QStringLiteral("--data-raw"), o.body};

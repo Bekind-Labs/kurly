@@ -95,6 +95,31 @@ private slots:
         QVERIFY(CurlCommand::arguments({}).isEmpty());
     }
 
+    void cookies()
+    {
+        CurlOptions o;
+        o.url = "https://example.com";
+        o.headers = {{"Accept", "*/*"}};
+        o.cookies = {{"session", "abc 123"}, {" ", "nameless is skipped"}, {" theme ", " dark "}};
+        QCOMPARE(CurlCommand::build(o),
+                 QString("curl -H 'Accept: */*' -b 'session=abc 123; theme=dark' https://example.com"));
+        o.longOptions = true;
+        QVERIFY(CurlCommand::build(o).contains("--cookie 'session=abc 123; theme=dark'"));
+        o.cookies = {{" ", "x"}};
+        QVERIFY(!CurlCommand::build(o).contains("cookie"));
+    }
+
+    void splitCookies()
+    {
+        QList<QPair<QString, QString>> out;
+        QVERIFY(CurlCommand::splitCookies(" a=1;b = x=y ;; c= ", &out));
+        QCOMPARE(out, (QList<QPair<QString, QString>>{{"a", "1"}, {"b", "x=y"}, {"c", ""}}));
+        // Not name=value pairs: nothing is added.
+        for (const char *bad : {"", " ; ", "cookies.txt", "a=1; =2", "a=1; junk"})
+            QVERIFY2(!CurlCommand::splitCookies(bad, &out), bad);
+        QCOMPARE(out.size(), 3);
+    }
+
     void multiline()
     {
         CurlOptions o;

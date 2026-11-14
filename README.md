@@ -4,8 +4,8 @@ A Qt-based native desktop app with a friendly UI for building cURL commands.
 
 **Website:** <https://bekind-labs.github.io/kurly/> ([日本語](https://bekind-labs.github.io/kurly/ja/))
 
-Fill in the form on the left (URL, method, headers, body, auth, common
-options) and the matching `curl` command updates live on the right. Click
+Fill in the form on the left (URL, method, headers, cookies, body, auth,
+common options) and the matching `curl` command updates live on the right. Click
 **Copy command** to put it on the clipboard, or **Run** (Ctrl/⌘+Return) to
 send the request with your installed `curl` and see the output below the
 command. JSON and XML responses are shown indented (toggle **Format
@@ -16,7 +16,9 @@ Already have a command? Click **Import curl command…** (Ctrl/⌘+Shift+I) and
 paste it, for example from your browser's developer tools (Network tab →
 right-click a request → Copy → Copy as cURL). Both the bash and Windows cmd
 formats work. If a curl command is already on the clipboard, it's filled in
-for you. Options Kurly can't represent are listed and skipped.
+for you. Cookies, whether given with `-b` or as a `Cookie` header, are put in
+the **Cookies** table so you can edit them one by one. Options Kurly can't
+represent are listed and skipped.
 
 ### Saving requests
 
@@ -165,7 +167,7 @@ ctest --test-dir build --output-on-failure
 | Test | Covers |
 |---|---|
 | `tst_curlcommand` | Building commands, shell quoting |
-| `tst_curlparser` | Importing commands: bash/cmd quoting, browser "Copy as cURL" output, every supported option, build→parse round trips |
+| `tst_curlparser` | Importing commands: bash/cmd quoting, browser "Copy as cURL" output, cookies, every supported option, build→parse round trips |
 | `tst_responseformatter` | JSON/XML pretty-printing, `--include` header handling |
 | `tst_requeststore` | The saved-request library: saving and loading, autosave, file permissions, damaged files, files from newer versions, editing |
 | `tst_requestrunner` | Running curl and collecting its output, stopping, missing curl |
@@ -265,6 +267,7 @@ Then regenerate the social preview images with
 - `src/requestrunner.*` – GUI-independent runner for one request's curl process
 - `src/importdialog.*` – the import dialog
 - `src/librarypanel.*` – the library sidebar
+- `src/pairtable.*` – the name/value tables used for headers and cookies
 - `src/mainwindow.*` – the form, command/response panes, and language switching
 - `packaging/` – scripts and manifests that build the release packages (AppImage, Flatpak, Windows zip, macOS dmg, Arch PKGBUILD)
 - `site/` – the website (see above)
