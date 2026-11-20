@@ -1,5 +1,6 @@
 # Maintainer: Kaylee Kobayashi kaylee@bekindlabs.com
-pkgname=kurly
+# "kurly" is already taken on the AUR by an unrelated curl alternative.
+pkgname=kurly-ui
 pkgver=0.3.0
 pkgrel=1
 pkgdesc='Friendly Qt app for building, importing and running curl commands'
@@ -9,11 +10,15 @@ license=('MIT')
 depends=('qt6-base' 'curl' 'gcc-libs' 'glibc' 'hicolor-icon-theme')
 # qt6-translations: Qt's own Japanese strings are embedded at build time.
 makedepends=('cmake' 'qt6-tools' 'qt6-translations')
+# Both install /usr/bin/kurly. This also covers this package's earlier name:
+# pacman offers to remove the old package when installing this one.
+conflicts=('kurly')
+_srcdir="kurly-$pkgver" # what GitHub names the folder in the tarball
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('7c809b425d771b51dc89bc920dbb7a0bf164805c06fb686bc8b8a34bc9eb00ee')
 
 build() {
-  cmake -B build -S "$pkgname-$pkgver" \
+  cmake -B build -S "$_srcdir" \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DKURLY_REQUIRE_QT_TRANSLATIONS=ON \
@@ -29,5 +34,5 @@ check() {
 
 package() {
   DESTDIR="$pkgdir" cmake --install build
-  install -Dm644 "$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$_srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
